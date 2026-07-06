@@ -2,6 +2,7 @@ __pycache__/
 *.pyc
 .env
 data/clinic.db
+data/*.db-journal
 .pytest_cache/
 venv/
 .venv/

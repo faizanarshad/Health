@@ -1,85 +1,120 @@
 # Clara — Clinic Admin Agent
 
-An AI agent for clinic front-desk work: checking doctor availability, booking
-and cancelling appointments, and answering common questions (hours, location,
-insurance, cancellation policy). Built with the Anthropic API (Claude) using
-tool use, backed by a small SQLite database.
+A modern AI assistant for clinic front-desk workflows. Clara helps with:
+- checking doctor availability
+- booking and cancelling appointments
+- answering common clinic questions (hours, location, insurance, policy)
+- voice-enabled booking when running the web interface
 
-**Scope:** administrative/scheduling only. Clara does not diagnose, interpret
-symptoms, or give medical advice — the system prompt enforces this, and she'll
-redirect medical questions to a clinician or emergency services.
+Clara is built with the Anthropic API and a small SQLite database. The agent
+uses tool-based reasoning to map natural language to deterministic booking
+and lookup operations without providing medical diagnosis or clinical advice.
 
-## Project structure
+## Key features
+
+- CLI chat experience via `main.py`
+- Web UI with chat, quick actions, and voice booking via `web.py`
+- Appointment management and availability checking
+- FAQ-style clinic support queries
+- SQLite-backed persistence in `data/clinic.db`
+
+## Repository structure
 
 ```
-healthagent/
-├── main.py                     # CLI chat loop
+.
+├── .env.example          # example configuration file for API key
+├── README.md
+├── main.py               # CLI entrypoint
+├── web.py                # Flask web application
 ├── requirements.txt
-├── .env.example
-├── data/                       # SQLite DB lives here (gitignored)
-└── src/healthagent/
-    ├── database.py             # schema, connection, seed data
-    ├── tools.py                # plain Python functions: booking, availability, FAQs
-    ├── agent.py                # Claude tool-use loop wrapping tools.py
-    └── __init__.py
+├── data/                 # local SQLite database file
+├── src/
+│   └── healthagent/
+│       ├── __init__.py
+│       ├── agent.py      # Claude tool-use orchestration and prompt handling
+│       ├── database.py   # SQLite schema, connection, and seed/init logic
+│       └── tools.py      # booking, availability, cancellation, and FAQ helpers
+├── templates/
+│   └── index.html        # web UI for chat and voice booking
 └── tests/
-    └── test_tools.py           # unit tests for tools.py (no API key needed)
+    └── test_tools.py     # unit tests for booking and helper logic
 ```
+
+## Prerequisites
+
+- Python 3.11+ (recommended)
+- `ANTHROPIC_API_KEY`
 
 ## Setup
 
 ```bash
-cd healthagent
-python -m venv venv && source venv/bin/activate
+cd /Users/MuhammadUsman/Documents/GitHub/Health
+python -m venv .venv
+source .venv/bin/activate
 pip install -r requirements.txt
-cp .env.example .env   # then add your ANTHROPIC_API_KEY
+cp .env.example .env
 ```
 
-## Run
+Then open `.env` and set:
+
+```env
+ANTHROPIC_API_KEY=your-api-key-here
+```
+
+## Run the CLI
 
 ```bash
 python main.py
 ```
 
-Example session:
+The CLI accepts natural language requests and responds with booking,
+availability, and FAQ results.
 
-```
-You: What doctors do you have?
-Clara: We have Dr. Amara Chen (General Practice), Dr. Luis Ferreira (Pediatrics), ...
+## Run the web app
 
-You: Book me with Dr. Chen next Monday at 10am, I'm Jane Doe
-Clara: Confirming: Jane Doe with Dr. Amara Chen on 2026-07-13 at 10:00. Shall I book it?
-
-You: yes
-Clara: Booked! Appointment #1 confirmed for Jane Doe with Dr. Amara Chen on 2026-07-13 at 10:00.
+```bash
+python web.py
 ```
 
-## Tests
+Then visit:
+
+```text
+http://127.0.0.1:5000
+```
+
+The web interface includes quick action buttons, a chat conversation panel, and
+voice-first booking controls.
+
+## Testing
 
 ```bash
 pytest tests/ -v
 ```
 
-Tests cover the booking logic directly (double-booking prevention, invalid
-times/dates, cancellation, FAQ lookup) and don't require an API key.
+The tests exercise the core booking and scheduling helpers without requiring an
+Anthropic API key.
 
-## How it works
+## Architecture overview
 
-`agent.py` defines a set of tools (`list_doctors`, `check_availability`,
-`book_appointment`, `cancel_appointment`, `list_appointments`, `answer_faq`)
-and hands them to the Claude Messages API. When the model decides it needs
-data or needs to perform an action, it emits a `tool_use` block; `ClinicAgent`
-executes the matching function from `tools.py` against the SQLite database in
-`data/clinic.db` and returns the result, looping until Claude produces a
-final natural-language reply.
+- `src/healthagent/agent.py` constructs the conversation flow and tool schema.
+- `src/healthagent/tools.py` contains the concrete booking, availability, and
+  FAQ functions the agent invokes.
+- `src/healthagent/database.py` manages SQLite persistence and initial seed data.
+- `main.py` starts a terminal chat loop.
+- `web.py` starts a Flask app and serves `templates/index.html`.
 
-## Extending
+## Deployment
 
-- Swap SQLite for Postgres by changing `database.py`'s connection layer.
-- Add a `send_reminder` tool (e.g. email/SMS) — stub it first, wire a
-  provider later.
-- Add authentication/patient verification before exposing this over a
-  real phone or web channel.
-- If you want clinical features (symptom intake, triage), treat that as a
-  separate, more carefully reviewed component — do not fold it into this
-  admin agent's scope without clinical and compliance review (HIPAA, etc.).
+For a production-ready deployment, consider:
+- securing environment variables and removing any secrets from source control
+- using a production WSGI server such as Gunicorn or uWSGI for `web.py`
+- adding authentication and authorization before exposing the app externally
+- moving SQLite to a managed database if you need concurrency and durability
+- enforcing HTTPS and appropriate security headers
+
+## Notes
+
+- This project is scoped to clinic administrative workflows only.
+- Clara is not a diagnostic tool and should not provide clinical advice.
+- For production deployment, add authentication, secure API handling, and
+  compliance controls.

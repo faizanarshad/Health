@@ -16,7 +16,7 @@ from . import tools
 
 MODEL = "claude-sonnet-4-5"
 
-SYSTEM_PROMPT = """You are Clara, the front-desk admin assistant for Springfield Wellness Clinic.
+SYSTEM_PROMPT = """You are Clara, the front-desk admin assistant for Ridgeview Family Clinic.
 
 Scope: scheduling, availability, cancellations, and answering clinic FAQs
 (hours, location, insurance, cancellation policy, new-patient info).
@@ -112,11 +112,21 @@ TOOL_IMPLEMENTATIONS = {
 }
 
 
+def format_tool_line(name: str, tool_input: dict) -> str:
+    """Render a tool call as the short trace shown under chat bubbles in the
+    dashboard, e.g. check_availability(doctor: "Whitfield", date: "2026-07-08")."""
+    parts = []
+    for key, value in tool_input.items():
+        rendered = f'"{value}"' if isinstance(value, str) else str(value)
+        parts.append(f"{key}: {rendered}")
+    return f"→ {name}({', '.join(parts)})"
+
+
 class ClinicAgent:
-    def __init__(self, api_key: str | None = None, model: str = MODEL):
+    def __init__(self, api_key: str | None = None, model: str = MODEL, messages: list[dict] | None = None):
         self.client = Anthropic(api_key=api_key or os.environ.get("ANTHROPIC_API_KEY"))
         self.model = model
-        self.messages: list[dict] = []
+        self.messages: list[dict] = messages or []
 
     def _run_tool(self, name: str, tool_input: dict) -> dict:
         impl = TOOL_IMPLEMENTATIONS.get(name)
@@ -127,9 +137,14 @@ class ClinicAgent:
         except Exception as exc:  # noqa: BLE001 - surface to the model as an error result
             return {"error": str(exc)}
 
-    def send(self, user_message: str) -> str:
-        """Send a user message, run any tool calls, and return the final text reply."""
+    def send(self, user_message: str) -> dict:
+        """Send a user message, run any tool calls, and return the final reply
+        plus a trace of tool calls made along the way.
+
+        Returns: {"reply": str, "tool_calls": [{"name": str, "input": dict, "result": dict, "trace": str}]}
+        """
         self.messages.append({"role": "user", "content": user_message})
+        tool_calls: list[dict] = []
 
         while True:
             response = self.client.messages.create(
@@ -143,13 +158,22 @@ class ClinicAgent:
             self.messages.append({"role": "assistant", "content": response.content})
 
             if response.stop_reason != "tool_use":
-                return "".join(block.text for block in response.content if block.type == "text")
+                reply = "".join(block.text for block in response.content if block.type == "text")
+                return {"reply": reply, "tool_calls": tool_calls}
 
             tool_results = []
             for block in response.content:
                 if block.type != "tool_use":
                     continue
                 result = self._run_tool(block.name, block.input)
+                tool_calls.append(
+                    {
+                        "name": block.name,
+                        "input": block.input,
+                        "result": result,
+                        "trace": format_tool_line(block.name, block.input),
+                    }
+                )
                 tool_results.append(
                     {
                         "type": "tool_result",

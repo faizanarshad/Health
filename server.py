@@ -4,7 +4,7 @@ Serves the dashboard UI (templates/dashboard.html) and a small JSON API that
 the dashboard's JavaScript calls to render the Schedule, Messages, Patients,
 Doctors, and Settings pages, and to talk to the Clara agent.
 
-Run with:  python web.py   (then open http://localhost:5000)
+Run with:  python server.py   (then open http://localhost:5000)
 Requires ANTHROPIC_API_KEY for the chat endpoints; the read-only dashboard
 pages work without it.
 """
@@ -21,7 +21,6 @@ from src.healthagent import tools
 from src.healthagent.agent import ClinicAgent
 
 load_dotenv()
-db.init_db()
 
 app = Flask(__name__)
 
@@ -148,4 +147,5 @@ def api_chat_reset():
 
 
 if __name__ == "__main__":
+    db.init_db()
     app.run(debug=True, port=5000)

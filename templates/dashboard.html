@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Clara — {{ clinic_name }}</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #F4F7F6;
+    --surface: #FFFFFF;
+    --ink: #1B2B29;
+    --ink-soft: #566A66;
+    --line: #DDE6E3;
+    --teal: #2F6F62;
+    --teal-deep: #204B41;
+    --teal-tint: #E4EFEB;
+    --amber: #DD9240;
+    --amber-tint: #FBEEDD;
+    --rose: #C1594F;
+    --rose-tint: #F7E9E7;
+    --patient: #7C8F8A;
+    --patient-tint: #E9EDEC;
+    --radius: 14px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .app{ display:grid; grid-template-columns: 72px 1fr; min-height: 100vh; }
+
+  /* ---------- Rail ---------- */
+  .rail{ background: var(--teal-deep); display:flex; flex-direction:column; align-items:center; padding: 20px 0; gap: 28px; }
+  .rail-mark{ width:36px; height:36px; border-radius: 10px; background: linear-gradient(155deg,#5B9C8A, #2F6F62); display:flex; align-items:center; justify-content:center; font-family:'Fraunces', serif; font-weight:600; color:white; font-size:16px; margin-bottom:8px; }
+  .rail-icon{ width:38px; height:38px; border-radius: 10px; display:flex; align-items:center; justify-content:center; color: rgba(255,255,255,0.55); cursor:pointer; transition: background .15s ease, color .15s ease; }
+  .rail-icon svg{ width:18px; height:18px; }
+  .rail-icon.active{ background: rgba(255,255,255,0.12); color: #fff; }
+  .rail-icon:hover{ color:#fff; }
+  .rail-spacer{ flex:1; }
+  .rail-avatar{ width:32px;height:32px;border-radius:50%; background: #7EA396; display:flex;align-items:center;justify-content:center; color:#0E241F; font-weight:600; font-size:12px; font-family:'IBM Plex Mono', monospace; }
+
+  /* ---------- Main ---------- */
+  .main{ display:flex; flex-direction:column; min-height:100vh; }
+  .topbar{ display:flex; align-items:center; justify-content:space-between; padding: 18px 32px; border-bottom: 1px solid var(--line); background: var(--surface); }
+  .clinic-id{ display:flex; align-items:center; gap:14px; }
+  .clinic-name{ font-family:'Fraunces', serif; font-weight:500; font-size: 20px; letter-spacing: -0.01em; }
+  .page-label{ font-size:12px; color: var(--ink-soft); padding-left:14px; border-left: 1px solid var(--line); text-transform:uppercase; letter-spacing:.04em; }
+  .status-pill{ display:flex; align-items:center; gap:8px; background: var(--teal-tint); color: var(--teal-deep); padding: 7px 14px; border-radius: 100px; font-size: 12.5px; font-weight: 600; }
+  .status-dot{ width:7px;height:7px;border-radius:50%; background: var(--teal); animation: pulse 2.2s infinite; }
+  @keyframes pulse{ 0%{ box-shadow: 0 0 0 0 rgba(47,111,98,.45); } 70%{ box-shadow: 0 0 0 7px rgba(47,111,98,0); } 100%{ box-shadow: 0 0 0 0 rgba(47,111,98,0); } }
+
+  .page{ padding: 24px 32px 32px; flex:1; }
+  .page[hidden]{ display:none; }
+
+  /* ---------- Shared icon circle ---------- */
+  .icon-circle{ display:flex; align-items:center; justify-content:center; border-radius:50%; flex-shrink:0; }
+  .icon-circle.patient{ background: var(--patient-tint); color: var(--patient); }
+  .icon-circle.doctor{ background: var(--teal); color: white; }
+
+  /* ---------- SCHEDULE PAGE ---------- */
+  .workspace{ display:grid; grid-template-columns: minmax(360px, 420px) 1fr; gap: 24px; align-items:start; }
+  .panel{ background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); overflow:hidden; display:flex; flex-direction:column; }
+  .panel-head{ padding: 18px 20px 14px; border-bottom: 1px solid var(--line); display:flex; align-items:center; justify-content:space-between; }
+  .panel-title{ font-family:'Fraunces', serif; font-size: 16.5px; font-weight: 500; }
+  .panel-sub{ font-size:12px; color: var(--ink-soft); margin-top:2px; }
+  .guardrail-badge{ font-size: 10.5px; font-weight:600; color: var(--teal-deep); background: var(--teal-tint); padding: 4px 9px; border-radius: 100px; white-space:nowrap; letter-spacing: .02em; }
+  .chat-thread{ padding: 18px 20px; display:flex; flex-direction:column; gap: 16px; max-height: 560px; overflow-y:auto; }
+  .msg{ display:flex; gap:10px; max-width: 100%; }
+  .msg.user{ flex-direction:row-reverse; }
+  .msg-avatar{ width:28px;height:28px; }
+  .msg-avatar svg{ width:16px; height:16px; }
+  .msg.clara .msg-avatar{ background: var(--teal); color:white; }
+  .msg.user .msg-avatar{ background: var(--patient-tint); color: var(--patient); }
+  .bubble{ padding: 10px 13px; border-radius: 12px; font-size: 13.3px; line-height:1.5; max-width: 82%; }
+  .msg.clara .bubble{ background: var(--teal-tint); color: var(--ink); border-top-left-radius: 3px; }
+  .msg.user .bubble{ background: #F1F3F2; border-top-right-radius: 3px; }
+  .bubble.redirect{ background: var(--amber-tint); border: 1px solid #F0D9B3; }
+  .bubble .redirect-tag{ display:block; font-size:10.5px; font-weight:700; color: #A0651E; letter-spacing:.04em; text-transform: uppercase; margin-bottom: 4px; }
+  .doctor-ref{ display:flex; align-items:center; gap:9px; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px dashed rgba(32,75,65,0.2); }
+  .doctor-ref .icon-circle{ width:26px; height:26px; }
+  .doctor-ref .icon-circle svg{ width:15px; height:15px; }
+  .doctor-ref span{ font-size:12px; color: var(--ink-soft); }
+  .doctor-ref span b{ color: var(--ink); font-weight:600; }
+  .bubble .tool-line{ margin-top:8px; padding-top:8px; border-top: 1px dashed rgba(32,75,65,0.25); font-family:'IBM Plex Mono', monospace; font-size: 11px; color: var(--teal-deep); display:flex; align-items:center; gap:6px; }
+  .chat-input{ margin: 4px 20px 20px; display:flex; align-items:center; gap:10px; border: 1px solid var(--line); border-radius: 100px; padding: 6px 6px 6px 16px; }
+  .chat-input input{ border:none; outline:none; flex:1; font-family:'Inter', sans-serif; font-size: 13px; color: var(--ink); background:transparent; }
+  .chat-input input::placeholder{ color: var(--ink-soft); }
+  .send-btn{ width:34px;height:34px;border-radius:50%; background: var(--teal-deep); display:flex;align-items:center;justify-content:center; color:white; flex-shrink:0; cursor:pointer; border:none; }
+  .send-btn svg{ width:14px; height:14px; }
+  .send-btn:disabled{ opacity:.5; cursor:default; }
+
+  .schedule{ background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 22px 26px 26px; }
+  .schedule-head{ display:flex; align-items:flex-start; justify-content:space-between; margin-bottom: 18px; }
+  .schedule-title{ font-family:'Fraunces', serif; font-size: 19px; font-weight:500; }
+  .schedule-title span{ color: var(--ink-soft); font-size:13px; font-family:'Inter'; font-weight:400; display:block; margin-top:3px;}
+  .doctor-row{ display:flex; gap:14px; margin-top:12px; flex-wrap:wrap; }
+  .doctor-chip{ display:flex; align-items:center; gap:7px; }
+  .doctor-chip .icon-circle{ width:26px; height:26px; background: var(--teal-tint); }
+  .doctor-chip .icon-circle svg{ width:14px; height:14px; color: var(--teal-deep); }
+  .doctor-chip span{ font-size: 12px; font-weight:500; color: var(--ink-soft); }
+  .stat-row{ display:flex; gap:10px; }
+  .stat{ text-align:right; padding: 6px 14px; border-radius: 10px; background: var(--bg); }
+  .stat b{ font-family:'IBM Plex Mono', monospace; font-size:16px; display:block; }
+  .stat span{ font-size:10.5px; color: var(--ink-soft); }
+  .week-strip{ display:flex; gap:8px; margin-bottom: 22px; padding-bottom: 18px; border-bottom: 1px solid var(--line); }
+  .day-chip{ flex:1; text-align:center; padding: 8px 4px; border-radius: 10px; cursor:pointer; }
+  .day-chip .d{ font-size:10.5px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.03em; }
+  .day-chip .n{ font-family:'IBM Plex Mono', monospace; font-size:14px; margin-top:3px; }
+  .day-chip.today{ background: var(--teal-deep); }
+  .day-chip.today .d, .day-chip.today .n{ color:white; }
+  .day-chip.selected:not(.today){ background: var(--teal-tint); }
+  .timeline{ position:relative; }
+  .tl-row{ display:grid; grid-template-columns: 52px 1fr; min-height: 56px; border-top: 1px solid var(--line); }
+  .tl-row:first-child{ border-top:none; }
+  .tl-time{ font-family:'IBM Plex Mono', monospace; font-size: 11px; color: var(--ink-soft); padding-top: 10px; }
+  .tl-slots{ display:flex; flex-direction:column; gap:6px; padding: 8px 0; }
+  .appt{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding: 9px 13px; border-radius: 9px; border-left: 3px solid var(--teal); background: var(--teal-tint); }
+  .appt-left{ display:flex; align-items:center; gap:12px; min-width:0; }
+  .appt.pending{ border-left-color: var(--amber); background: var(--amber-tint); }
+  .appt.cancelled{ border-left-color: var(--rose); background: var(--rose-tint); opacity:.75; }
+  .avatar-pair{ display:flex; align-items:center; flex-shrink:0; }
+  .avatar-pair .icon-circle{ width:30px; height:30px; border: 2px solid var(--surface); }
+  .avatar-pair .icon-circle svg{ width:16px; height:16px; }
+  .avatar-pair .icon-circle.doctor{ margin-left:-12px; box-shadow: 0 0 0 1px var(--teal-tint); }
+  .appt.cancelled .avatar-pair .icon-circle.patient{ background:#EFE2E0; color: var(--rose); }
+  .appt.pending .avatar-pair .icon-circle.patient{ background:#F5E4C8; color:#A0651E; }
+  .appt-info{ display:flex; flex-direction:column; }
+  .appt-info b{ font-size: 12.8px; font-weight:600; }
+  .appt-info span{ font-size: 11px; color: var(--ink-soft); margin-top:1px; }
+  .appt-status{ font-size: 10px; font-weight:700; letter-spacing:.03em; text-transform:uppercase; color: var(--teal-deep); }
+  .appt.pending .appt-status{ color:#A0651E; }
+  .appt.cancelled .appt-status{ color: var(--rose); text-decoration: line-through; }
+  .tl-empty{ font-size:11.5px; color: #A9B8B4; padding-top:10px; font-style:italic; }
+  .art-header{ display:flex; align-items:center; gap:12px; }
+  .art-header svg{ width:40px; height:40px; flex-shrink:0; }
+  .footnote{ margin-top:20px; display:flex; align-items:center; gap:8px; font-size:11.5px; color: var(--ink-soft); }
+  .footnote svg{ width:13px;height:13px; flex-shrink:0; color:var(--teal); }
+
+  /* ---------- MESSAGES PAGE ---------- */
+  .messages-wrap{ display:grid; grid-template-columns: 340px 1fr; gap:24px; height: calc(100vh - 140px); }
+  .thread-list{ background: var(--surface); border:1px solid var(--line); border-radius: var(--radius); overflow-y:auto; }
+  .thread-list-head{ padding: 16px 18px; border-bottom:1px solid var(--line); font-family:'Fraunces', serif; font-size:16.5px; font-weight:500; }
+  .thread-item{ display:flex; gap:12px; padding: 13px 18px; border-bottom:1px solid var(--line); cursor:pointer; }
+  .thread-item.active{ background: var(--teal-tint); }
+  .thread-item .icon-circle{ width:34px; height:34px; }
+  .thread-item .icon-circle svg{ width:18px; height:18px; }
+  .thread-body{ flex:1; min-width:0; }
+  .thread-top{ display:flex; justify-content:space-between; align-items:baseline; }
+  .thread-name{ font-size:13px; font-weight:600; }
+  .thread-time{ font-size:10.5px; color: var(--ink-soft); font-family:'IBM Plex Mono', monospace; }
+  .thread-preview{ font-size:12px; color: var(--ink-soft); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .unread-dot{ width:8px; height:8px; border-radius:50%; background: var(--amber); flex-shrink:0; margin-top:5px; }
+  .thread-view{ background: var(--surface); border:1px solid var(--line); border-radius: var(--radius); display:flex; flex-direction:column; }
+  .thread-view-head{ padding: 16px 20px; border-bottom:1px solid var(--line); display:flex; align-items:center; gap:12px; }
+  .thread-view-head .icon-circle{ width:36px; height:36px; }
+  .thread-view-head .icon-circle svg{ width:19px; height:19px; }
+  .thread-view-name{ font-size:14.5px; font-weight:600; }
+  .thread-view-channel{ font-size:11px; color: var(--ink-soft); }
+  .thread-view-body{ flex:1; padding: 20px; display:flex; flex-direction:column; gap:14px; overflow-y:auto; }
+  .thread-view-empty{ display:flex; align-items:center; justify-content:center; height:100%; color: var(--ink-soft); font-size:13px; }
+
+  /* ---------- PATIENTS PAGE ---------- */
+  .patients-head{ display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; }
+  .patients-title{ font-family:'Fraunces', serif; font-size:22px; font-weight:500; }
+  .patients-title span{ display:block; font-family:'Inter'; font-weight:400; font-size:13px; color: var(--ink-soft); margin-top:3px; }
+  .search-box{ display:flex; align-items:center; gap:8px; background: var(--surface); border:1px solid var(--line); border-radius:100px; padding:8px 16px; width:280px; }
+  .search-box svg{ width:15px;height:15px; color: var(--ink-soft); }
+  .search-box input{ border:none; outline:none; flex:1; font-size:13px; background:transparent; }
+  .patient-table{ background: var(--surface); border:1px solid var(--line); border-radius: var(--radius); overflow:hidden; }
+  .p-row{ display:grid; grid-template-columns: 2fr 1.2fr 1.2fr 1fr 1fr; align-items:center; padding: 13px 22px; border-bottom:1px solid var(--line); }
+  .p-row:last-child{ border-bottom:none; }
+  .p-row.head{ background: var(--bg); font-size:10.5px; text-transform:uppercase; letter-spacing:.04em; color: var(--ink-soft); font-weight:600; }
+  .p-name{ display:flex; align-items:center; gap:10px; }
+  .p-name .icon-circle{ width:32px; height:32px; }
+  .p-name .icon-circle svg{ width:17px; height:17px; }
+  .p-name b{ font-size:13px; font-weight:600; display:block; }
+  .p-name span{ font-size:11px; color: var(--ink-soft); }
+  .p-cell{ font-size:12.5px; color: var(--ink-soft); }
+  .p-cell.mono{ font-family:'IBM Plex Mono', monospace; font-size:11.5px; }
+  .tag{ font-size:10.5px; font-weight:600; padding:3px 9px; border-radius:100px; background: var(--teal-tint); color: var(--teal-deep); display:inline-block; }
+
+  /* ---------- SETTINGS PAGE ---------- */
+  .settings-grid{ display:grid; grid-template-columns: 1fr 1fr; gap:24px; }
+  .settings-card{ background: var(--surface); border:1px solid var(--line); border-radius: var(--radius); padding:22px; }
+  .settings-card h3{ font-family:'Fraunces', serif; font-weight:500; font-size:16px; margin:0 0 4px; }
+  .settings-card .card-sub{ font-size:12px; color: var(--ink-soft); margin-bottom:16px; }
+  .settings-row{ display:flex; justify-content:space-between; align-items:center; padding: 10px 0; border-bottom:1px solid var(--line); font-size:13px; }
+  .settings-row:last-child{ border-bottom:none; }
+  .settings-row .label{ color: var(--ink-soft); }
+  .settings-row .value{ font-family:'IBM Plex Mono', monospace; font-size:12px; }
+  .toggle{ width:36px; height:20px; border-radius:100px; background: var(--teal); position:relative; flex-shrink:0; }
+  .toggle::after{ content:''; position:absolute; width:16px;height:16px; background:white; border-radius:50%; top:2px; right:2px; }
+  .toggle.off{ background:#D8DEDC; }
+  .toggle.off::after{ left:2px; right:auto; }
+  .guard-item{ display:flex; align-items:flex-start; gap:10px; padding:10px 0; border-bottom:1px solid var(--line); }
+  .guard-item:last-child{ border-bottom:none; }
+  .guard-item svg{ width:16px;height:16px; color: var(--teal); flex-shrink:0; margin-top:2px; }
+  .guard-item div b{ display:block; font-size:12.8px; }
+  .guard-item div span{ font-size:11.5px; color: var(--ink-soft); }
+
+  /* ---------- DOCTORS PAGE ---------- */
+  .doctors-head{ margin-bottom:20px; }
+  .doctors-title{ font-family:'Fraunces', serif; font-size:22px; font-weight:500; }
+  .doctors-title span{ display:block; font-family:'Inter'; font-weight:400; font-size:13px; color: var(--ink-soft); margin-top:3px; }
+  .doctor-grid{ display:grid; grid-template-columns: repeat(3, 1fr); gap:20px; }
+  .doctor-card{ background: var(--surface); border:1px solid var(--line); border-radius: var(--radius); padding:22px; display:flex; flex-direction:column; }
+  .doctor-card-top{ display:flex; align-items:center; gap:14px; margin-bottom:16px; }
+  .doctor-card .icon-circle.doctor{ width:52px; height:52px; }
+  .doctor-card .icon-circle.doctor svg{ width:28px; height:28px; }
+  .doctor-card-name{ font-family:'Fraunces', serif; font-size:16.5px; font-weight:500; }
+  .doctor-card-spec{ font-size:12px; color: var(--ink-soft); margin-top:2px; }
+  .doctor-bio{ font-size:12.5px; color: var(--ink-soft); line-height:1.55; margin-bottom:16px; }
+  .doctor-stats{ display:flex; gap:10px; margin-bottom:16px; }
+  .doctor-stat{ flex:1; text-align:center; padding:10px 6px; border-radius:10px; background: var(--bg); }
+  .doctor-stat b{ font-family:'IBM Plex Mono', monospace; font-size:15px; display:block; }
+  .doctor-stat span{ font-size:10px; color: var(--ink-soft); }
+  .doctor-avail{ margin-top:auto; }
+  .doctor-avail-label{ font-size:10.5px; text-transform:uppercase; letter-spacing:.04em; color: var(--ink-soft); font-weight:600; margin-bottom:8px; }
+  .avail-days{ display:flex; gap:5px; }
+  .avail-day{ flex:1; text-align:center; padding:6px 2px; border-radius:7px; font-size:10px; font-weight:600; background: var(--bg); color: var(--ink-soft); }
+  .avail-day.on{ background: var(--teal-tint); color: var(--teal-deep); }
+
+  @media (max-width: 920px){
+    .workspace{ grid-template-columns: 1fr; }
+    .messages-wrap{ grid-template-columns: 1fr; height:auto; }
+    .settings-grid{ grid-template-columns: 1fr; }
+    .p-row{ grid-template-columns: 1.6fr 1fr 1fr; }
+    .doctor-grid{ grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <symbol id="icon-doctor" viewBox="0 0 24 24">
+      <path fill="currentColor" d="M12 12a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9z"/>
+      <path fill="currentColor" d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7v.5H4V21z"/>
+      <path fill="none" stroke="#fff" stroke-width="1.1" d="M9.3 14.8v2.1a2.7 2.7 0 0 0 5.4 0v-2.1"/>
+      <circle cx="14.7" cy="17.6" r="1" fill="none" stroke="#fff" stroke-width="1"/>
+    </symbol>
+    <symbol id="icon-patient" viewBox="0 0 24 24">
+      <path fill="currentColor" d="M12 12a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9z"/>
+      <path fill="currentColor" d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7v.5H4V21z"/>
+    </symbol>
+    <symbol id="icon-send" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" d="M5 12h14M13 6l6 6-6 6"/></symbol>
+    <symbol id="icon-check" viewBox="0 0 24 24"><path fill="none" stroke="white" stroke-width="2" d="M8 12l2.5 2.5L16 9"/></symbol>
+  </defs>
+</svg>
+
+<div class="app">
+  <div class="rail">
+    <div class="rail-mark">C</div>
+    <div class="rail-icon active" data-page="schedule-page" onclick="showPage(this)" title="Schedule">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
+    </div>
+    <div class="rail-icon" data-page="messages-page" onclick="showPage(this)" title="Messages">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+    </div>
+    <div class="rail-icon" data-page="patients-page" onclick="showPage(this)" title="Patients">
+      <svg viewBox="0 0 24 24"><use href="#icon-patient" fill="currentColor"/></svg>
+    </div>
+    <div class="rail-icon" data-page="doctors-page" onclick="showPage(this)" title="Doctors">
+      <svg viewBox="0 0 24 24"><use href="#icon-doctor" fill="currentColor"/></svg>
+    </div>
+    <div class="rail-icon" data-page="settings-page" onclick="showPage(this)" title="Settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 13a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6V19a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.6-1H4a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H10a1.7 1.7 0 0 0 1-1.6V4a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V10a1.7 1.7 0 0 0 1.6 1H20a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.6 1z"/></svg>
+    </div>
+    <div class="rail-spacer"></div>
+    <div class="rail-avatar">FD</div>
+  </div>
+
+  <div class="main">
+    <div class="topbar">
+      <div class="clinic-id">
+        <div class="clinic-name">{{ clinic_name }}</div>
+        <div class="page-label" id="page-label">Schedule</div>
+      </div>
+      <div class="status-pill"><div class="status-dot"></div><span id="status-text">Clara is online — handling front desk</span></div>
+    </div>
+
+    <!-- ================= SCHEDULE PAGE ================= -->
+    <div class="page" id="schedule-page">
+      <div class="workspace">
+        <div class="panel">
+          <div class="panel-head">
+            <div class="art-header">
+              <svg viewBox="0 0 48 48" fill="none">
+                <rect x="10" y="6" width="22" height="30" rx="3" fill="#E4EFEB" stroke="#2F6F62" stroke-width="1.6"/>
+                <rect x="16" y="2" width="10" height="6" rx="1.5" fill="#2F6F62"/>
+                <path d="M15 16h12M15 21h12M15 26h8" stroke="#2F6F62" stroke-width="1.6" stroke-linecap="round"/>
+                <path d="M27 30c8-2 13 3 13 9 0 4-3 7-8 7-1.5 0-3-.3-4-.8l-4 2 1-4c-2-1.5-3-3.5-3-6 0-3.5 2-6.5 5-7.2z" fill="#DD9240" stroke="#A0651E" stroke-width="1.3"/>
+                <circle cx="30" cy="39" r="1.1" fill="#A0651E"/><circle cx="34" cy="39" r="1.1" fill="#A0651E"/><circle cx="38" cy="39" r="1.1" fill="#A0651E"/>
+              </svg>
+              <div>
+                <div class="panel-title">Ask Clara</div>
+                <div class="panel-sub">Scheduling &amp; front-desk questions only</div>
+              </div>
+            </div>
+            <div class="guardrail-badge">No medical advice</div>
+          </div>
+          <div class="chat-thread" id="schedule-chat-thread"></div>
+          <div class="chat-input">
+            <input type="text" id="schedule-chat-input" placeholder="Ask Clara to book, cancel, or answer a question…">
+            <button class="send-btn" id="schedule-send-btn"><svg viewBox="0 0 24 24"><use href="#icon-send" fill="none" stroke="currentColor"/></svg></button>
+          </div>
+        </div>
+
+        <div class="schedule">
+          <div class="schedule-head">
+            <div>
+              <div class="schedule-title">Today's Schedule<span id="schedule-date-label">Front desk view</span></div>
+              <div class="doctor-row" id="schedule-doctor-row"></div>
+            </div>
+            <div class="stat-row" id="schedule-stat-row"></div>
+          </div>
+          <div class="week-strip" id="week-strip"></div>
+          <div class="timeline" id="timeline"></div>
+          <div class="footnote"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v4M12 16h.01"/><circle cx="12" cy="12" r="10"/></svg>Clara handles scheduling and admin questions only — medical questions are always routed to a clinician.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= MESSAGES PAGE ================= -->
+    <div class="page" id="messages-page" hidden>
+      <div class="messages-wrap">
+        <div class="thread-list">
+          <div class="thread-list-head">Patient Messages</div>
+          <div id="thread-list-items"></div>
+        </div>
+        <div class="thread-view" id="thread-view"></div>
+      </div>
+    </div>
+
+    <!-- ================= PATIENTS PAGE ================= -->
+    <div class="page" id="patients-page" hidden>
+      <div class="patients-head">
+        <div class="patients-title">Patients<span id="patients-count">— on file</span></div>
+        <div class="search-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg><input type="text" id="patient-search" placeholder="Search patients…"></div>
+      </div>
+      <div class="patient-table">
+        <div class="p-row head"><div>Patient</div><div>Last visit</div><div>Next appointment</div><div>Insurance</div><div>Status</div></div>
+        <div id="patient-rows"></div>
+      </div>
+    </div>
+
+    <!-- ================= SETTINGS PAGE ================= -->
+    <div class="page" id="settings-page" hidden>
+      <div class="settings-grid">
+        <div class="settings-card">
+          <h3>Clinic Hours</h3>
+          <div class="card-sub">Clara uses this to answer hours questions and block bookings outside these times.</div>
+          <div id="settings-hours"></div>
+        </div>
+        <div class="settings-card">
+          <h3>Insurance Accepted</h3>
+          <div class="card-sub">Clara references this list when patients ask about coverage.</div>
+          <div id="settings-insurance"></div>
+        </div>
+        <div class="settings-card">
+          <h3>Cancellation Policy</h3>
+          <div class="card-sub">Shown to patients when they ask, and enforced when Clara processes a cancellation.</div>
+          <div id="settings-cancellation"></div>
+        </div>
+        <div class="settings-card">
+          <h3>Clara's Guardrails</h3>
+          <div class="card-sub">Enforced by the system prompt — Clara always redirects these.</div>
+          <div id="settings-guardrails"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= DOCTORS PAGE ================= -->
+    <div class="page" id="doctors-page" hidden>
+      <div class="doctors-head">
+        <div class="doctors-title">Doctors<span id="doctors-count">— on staff · Front desk reference</span></div>
+      </div>
+      <div class="doctor-grid" id="doctor-grid"></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  // ---------------------------------------------------------------------
+  // Page navigation (unchanged from the original mockup)
+  // ---------------------------------------------------------------------
+  function showPage(el){
+    document.querySelectorAll('.page').forEach(p => p.hidden = true);
+    document.querySelectorAll('.rail-icon').forEach(i => i.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById(el.dataset.page).hidden = false;
+    document.getElementById('page-label').textContent = el.title;
+    if (el.dataset.page === 'patients-page') loadPatients();
+    if (el.dataset.page === 'doctors-page') loadDoctors();
+    if (el.dataset.page === 'settings-page') loadSettings();
+    if (el.dataset.page === 'messages-page') loadThreads();
+  }
+
+  function escapeHtml(str){
+    const div = document.createElement('div');
+    div.textContent = str == null ? '' : String(str);
+    return div.innerHTML;
+  }
+
+  const patientIcon = '<svg viewBox="0 0 24 24"><use href="#icon-patient" fill="currentColor"/></svg>';
+  const doctorIcon = '<svg viewBox="0 0 24 24"><use href="#icon-doctor" fill="currentColor"/></svg>';
+  const checkIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><use href="#icon-check"/></svg>';
+
+  // Heuristic only — a cosmetic cue for the UI. The actual guardrail is the
+  // agent's system prompt (see src/healthagent/agent.py), not this check.
+  function looksLikeRedirect(reply, toolCalls){
+    if (toolCalls && toolCalls.length) return false;
+    const flags = ["can't diagnose", "can't advise", "not a medical professional",
+                    "speak with a clinician", "speak to a clinician", "emergency services",
+                    "can't help with that"];
+    const lower = reply.toLowerCase();
+    return flags.some(f => lower.includes(f));
+  }
+
+  function renderChatMessage(container, {sender, text, toolLine}){
+    const isClara = sender === 'clara';
+    const wrap = document.createElement('div');
+    wrap.className = 'msg ' + (isClara ? 'clara' : 'user');
+    const redirect = isClara && looksLikeRedirect(text, toolLine ? [toolLine] : []);
+    wrap.innerHTML = `
+      <div class="msg-avatar icon-circle" style="${isClara ? 'background:var(--teal)' : ''}">${isClara ? checkIcon : patientIcon}</div>
+      <div class="bubble ${redirect ? 'redirect' : ''}">
+        ${redirect ? '<span class="redirect-tag">Redirected — outside my scope</span>' : ''}
+        ${escapeHtml(text)}
+        ${toolLine ? `<div class="tool-line">${escapeHtml(toolLine)}</div>` : ''}
+      </div>`;
+    if (!isClara) wrap.querySelector('.msg-avatar').classList.add('patient');
+    container.appendChild(wrap);
+    container.scrollTop = container.scrollHeight;
+  }
+
+  // ---------------------------------------------------------------------
+  // Schedule page: "Ask Clara" console + today's timeline
+  // ---------------------------------------------------------------------
+  const scheduleThread = document.getElementById('schedule-chat-thread');
+  let selectedDate = new Date().toISOString().slice(0, 10);
+
+  renderChatMessage(scheduleThread, {
+    sender: 'clara',
+    text: "Hi, I'm Clara. Ask me to check a doctor's availability, book or cancel an appointment, or answer a clinic question."
+  });
+
+  async function sendConsoleMessage(){
+    const input = document.getElementById('schedule-chat-input');
+    const text = input.value.trim();
+    if (!text) return;
+    renderChatMessage(scheduleThread, {sender: 'user', text});
+    input.value = '';
+    const btn = document.getElementById('schedule-send-btn');
+    btn.disabled = true;
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({text}),
+      });
+      const data = await res.json();
+      if (data.error) {
+        renderChatMessage(scheduleThread, {sender: 'clara', text: data.error});
+      } else {
+        renderChatMessage(scheduleThread, {
+          sender: 'clara', text: data.reply,
+          toolLine: data.tool_calls && data.tool_calls.length ? data.tool_calls.map(t => t.trace).join('  ') : null,
+        });
+        loadSchedule(selectedDate); // refresh timeline in case something was booked/cancelled
+      }
+    } catch (e) {
+      renderChatMessage(scheduleThread, {sender: 'clara', text: 'Sorry, I could not reach the server: ' + e.message});
+    } finally {
+      btn.disabled = false;
+    }
+  }
+  document.getElementById('schedule-send-btn').addEventListener('click', sendConsoleMessage);
+  document.getElementById('schedule-chat-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') sendConsoleMessage();
+  });
+
+  function buildWeekStrip(centerDateStr){
+    const strip = document.getElementById('week-strip');
+    strip.innerHTML = '';
+    const center = new Date(centerDateStr + 'T00:00:00');
+    const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    const todayStr = new Date().toISOString().slice(0, 10);
+    for (let offset = -center.getDay(); offset < 7 - center.getDay(); offset++){
+      const d = new Date(center);
+      d.setDate(center.getDate() + offset);
+      const dStr = d.toISOString().slice(0, 10);
+      const chip = document.createElement('div');
+      chip.className = 'day-chip' + (dStr === todayStr ? ' today' : '') + (dStr === selectedDate ? ' selected' : '');
+      chip.innerHTML = `<div class="d">${dayNames[d.getDay()]}</div><div class="n">${String(d.getDate()).padStart(2,'0')}</div>`;
+      chip.addEventListener('click', () => { selectedDate = dStr; loadSchedule(selectedDate); });
+      strip.appendChild(chip);
+    }
+  }
+
+  function formatHourLabel(hhmm){
+    const hour = parseInt(hhmm.split(':')[0], 10);
+    const short = hour > 12 ? hour - 12 : hour;
+    return `${short}:00`;
+  }
+
+  async function loadSchedule(dateStr){
+    buildWeekStrip(dateStr);
+    document.getElementById('schedule-date-label').textContent =
+      new Date(dateStr + 'T00:00:00').toLocaleDateString(undefined, {weekday:'long', month:'short', day:'numeric'});
+
+    const [doctors, schedule] = await Promise.all([
+      fetch('/api/doctors?date=' + dateStr).then(r => r.json()),
+      fetch('/api/schedule?date=' + dateStr).then(r => r.json()),
+    ]);
+
+    const doctorRow = document.getElementById('schedule-doctor-row');
+    doctorRow.innerHTML = doctors.map(d => `
+      <div class="doctor-chip"><div class="icon-circle doctor" style="background:var(--teal-tint)"><svg viewBox="0 0 24 24" style="color:var(--teal-deep)"><use href="#icon-doctor" fill="currentColor"/></svg></div><span>${escapeHtml(d.name)}</span></div>
+    `).join('');
+
+    const statRow = document.getElementById('schedule-stat-row');
+    const c = schedule.counts;
+    statRow.innerHTML = `
+      <div class="stat"><b>${c.booked || 0}</b><span>Booked</span></div>
+      <div class="stat"><b>${c.pending || 0}</b><span>Pending</span></div>
+      <div class="stat"><b>${c.cancelled || 0}</b><span>Cancelled</span></div>
+    `;
+
+    // Group appointments by whole hour for the timeline rows.
+    const hours = ['09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00'];
+    const byHour = {};
+    hours.forEach(h => byHour[h] = []);
+    schedule.appointments.forEach(a => {
+      const hourKey = a.time.split(':')[0].padStart(2, '0') + ':00';
+      if (!byHour[hourKey]) byHour[hourKey] = [];
+      byHour[hourKey].push(a);
+    });
+
+    const timeline = document.getElementById('timeline');
+    timeline.innerHTML = hours.map(h => {
+      const appts = byHour[h] || [];
+      const slotsHtml = appts.length ? appts.map(a => `
+        <div class="appt ${a.status !== 'booked' ? a.status : ''}">
+          <div class="appt-left">
+            <div class="avatar-pair"><div class="icon-circle patient">${patientIcon}</div><div class="icon-circle doctor">${doctorIcon}</div></div>
+            <div class="appt-info"><b>${escapeHtml(a.patient_name)}</b><span>${escapeHtml(a.doctor_name)} · ${escapeHtml(a.reason || '')}</span></div>
+          </div>
+          <div class="appt-status">${a.status === 'booked' ? 'Confirmed' : a.status.charAt(0).toUpperCase() + a.status.slice(1)}</div>
+        </div>
+      `).join('') : '<div class="tl-empty">No appointments booked</div>';
+      return `<div class="tl-row"><div class="tl-time">${formatHourLabel(h)}</div><div class="tl-slots">${slotsHtml}</div></div>`;
+    }).join('');
+  }
+
+  async function loadClinicStatus(){
+    try {
+      const clinic = await fetch('/api/clinic').then(r => r.json());
+      document.getElementById('status-text').textContent = clinic.status;
+    } catch (e) { /* non-fatal */ }
+  }
+
+  // ---------------------------------------------------------------------
+  // Messages page
+  // ---------------------------------------------------------------------
+  let activeThreadId = null;
+  let cachedThreads = [];
+
+  async function loadThreads(){
+    cachedThreads = await fetch('/api/messages/threads').then(r => r.json());
+    const list = document.getElementById('thread-list-items');
+    list.innerHTML = cachedThreads.map(t => `
+      <div class="thread-item ${t.id === activeThreadId ? 'active' : ''}" data-id="${t.id}">
+        <div class="icon-circle patient" style="width:34px;height:34px">${patientIcon}</div>
+        <div class="thread-body">
+          <div class="thread-top"><span class="thread-name">${escapeHtml(t.patient_name)}</span></div>
+          <div class="thread-preview">${escapeHtml(t.preview)}</div>
+        </div>
+      </div>
+    `).join('');
+    list.querySelectorAll('.thread-item').forEach(item => {
+      item.addEventListener('click', () => openThread(parseInt(item.dataset.id, 10)));
+    });
+    if (activeThreadId === null && cachedThreads.length) openThread(cachedThreads[0].id);
+  }
+
+  async function openThread(threadId){
+    activeThreadId = threadId;
+    document.querySelectorAll('.thread-item').forEach(i => i.classList.toggle('active', parseInt(i.dataset.id,10) === threadId));
+
+    const thread = await fetch('/api/messages/threads/' + threadId).then(r => r.json());
+    const view = document.getElementById('thread-view');
+    view.innerHTML = `
+      <div class="thread-view-head">
+        <div class="icon-circle patient" style="width:36px;height:36px">${patientIcon}</div>
+        <div><div class="thread-view-name">${escapeHtml(thread.patient_name)}</div><div class="thread-view-channel">${escapeHtml(thread.channel)} · Handled by Clara</div></div>
+      </div>
+      <div class="thread-view-body" id="thread-view-body"></div>
+      <div class="chat-input">
+        <input type="text" id="thread-reply-input" placeholder="Reply as ${escapeHtml(thread.patient_name)}…">
+        <button class="send-btn" id="thread-send-btn"><svg viewBox="0 0 24 24"><use href="#icon-send" fill="none" stroke="currentColor"/></svg></button>
+      </div>
+    `;
+    const body = document.getElementById('thread-view-body');
+    thread.messages.forEach(m => renderChatMessage(body, {sender: m.sender, text: m.text, toolLine: m.tool_line}));
+
+    document.getElementById('thread-send-btn').addEventListener('click', () => sendThreadReply(threadId));
+    document.getElementById('thread-reply-input').addEventListener('keydown', e => {
+      if (e.key === 'Enter') sendThreadReply(threadId);
+    });
+  }
+
+  async function sendThreadReply(threadId){
+    const input = document.getElementById('thread-reply-input');
+    const text = input.value.trim();
+    if (!text) return;
+    const body = document.getElementById('thread-view-body');
+    renderChatMessage(body, {sender: 'patient', text});
+    input.value = '';
+    const btn = document.getElementById('thread-send-btn');
+    btn.disabled = true;
+    try {
+      const res = await fetch(`/api/messages/threads/${threadId}/reply`, {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({text}),
+      });
+      const data = await res.json();
+      if (data.error) {
+        renderChatMessage(body, {sender: 'clara', text: data.error});
+      } else {
+        renderChatMessage(body, {
+          sender: 'clara', text: data.reply,
+          toolLine: data.tool_calls && data.tool_calls.length ? data.tool_calls.map(t => t.trace).join('  ') : null,
+        });
+        loadThreads();
+      }
+    } catch (e) {
+      renderChatMessage(body, {sender: 'clara', text: 'Sorry, I could not reach the server: ' + e.message});
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  // ---------------------------------------------------------------------
+  // Patients page
+  // ---------------------------------------------------------------------
+  let cachedPatients = [];
+
+  function renderPatientRows(patients){
+    const statusTag = (status) => {
+      if (status === 'Cancelled visit') return `<span class="tag" style="background:var(--rose-tint);color:var(--rose)">${status}</span>`;
+      return `<span class="tag">${status}</span>`;
+    };
+    document.getElementById('patient-rows').innerHTML = patients.map(p => `
+      <div class="p-row">
+        <div class="p-name"><div class="icon-circle patient">${patientIcon}</div><div><b>${escapeHtml(p.name)}</b><span>${escapeHtml(p.sex || '')} · Age ${p.age ?? '—'}</span></div></div>
+        <div class="p-cell mono">${escapeHtml(p.last_visit || '—')}</div>
+        <div class="p-cell mono">${escapeHtml(p.next_appointment || 'Not scheduled')}</div>
+        <div class="p-cell">${escapeHtml(p.insurance || '—')}</div>
+        <div>${statusTag(p.status)}</div>
+      </div>
+    `).join('');
+  }
+
+  async function loadPatients(){
+    cachedPatients = await fetch('/api/patients').then(r => r.json());
+    document.getElementById('patients-count').textContent = `${cachedPatients.length} on file`;
+    renderPatientRows(cachedPatients);
+  }
+
+  document.getElementById('patient-search').addEventListener('input', (e) => {
+    const q = e.target.value.toLowerCase();
+    renderPatientRows(cachedPatients.filter(p => p.name.toLowerCase().includes(q)));
+  });
+
+  // ---------------------------------------------------------------------
+  // Doctors page
+  // ---------------------------------------------------------------------
+  async function loadDoctors(){
+    const dateStr = new Date().toISOString().slice(0, 10);
+    const doctors = await fetch('/api/doctors?date=' + dateStr).then(r => r.json());
+    document.getElementById('doctors-count').textContent = `${doctors.length} on staff · Front desk reference`;
+    document.getElementById('doctor-grid').innerHTML = doctors.map(d => `
+      <div class="doctor-card">
+        <div class="doctor-card-top">
+          <div class="icon-circle doctor">${doctorIcon}</div>
+          <div><div class="doctor-card-name">${escapeHtml(d.name)}</div><div class="doctor-card-spec">${escapeHtml(d.specialty)}</div></div>
+        </div>
+        <div class="doctor-bio">${escapeHtml(d.bio)}</div>
+        <div class="doctor-stats">
+          <div class="doctor-stat"><b>${d.experience_years}y</b><span>Experience</span></div>
+          <div class="doctor-stat"><b>${d.rating.toFixed(1)}</b><span>Rating</span></div>
+          <div class="doctor-stat"><b>${d.patients_per_week}</b><span>Patients / wk</span></div>
+        </div>
+        <div class="doctor-avail">
+          <div class="doctor-avail-label">Available today</div>
+          <div class="avail-days">
+            ${d.availability_preview.map(p => {
+              const hour = parseInt(p.hour, 10);
+              const label = hour > 12 ? hour - 12 : hour;
+              return `<div class="avail-day ${p.available ? 'on' : ''}">${label}</div>`;
+            }).join('')}
+          </div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  // ---------------------------------------------------------------------
+  // Settings page
+  // ---------------------------------------------------------------------
+  async function loadSettings(){
+    const s = await fetch('/api/settings').then(r => r.json());
+    document.getElementById('settings-hours').innerHTML = s.hours.map(h => `
+      <div class="settings-row"><span class="label">${escapeHtml(h.label)}</span><span class="value">${escapeHtml(h.value)}</span></div>
+    `).join('');
+    document.getElementById('settings-insurance').innerHTML = s.insurance.map(i => `
+      <div class="settings-row"><span class="label">${escapeHtml(i.label)}</span><div class="toggle ${i.accepted ? '' : 'off'}"></div></div>
+    `).join('');
+    document.getElementById('settings-cancellation').innerHTML = s.cancellation_policy.map(c => `
+      <div class="settings-row"><span class="label">${escapeHtml(c.label)}</span><span class="value">${escapeHtml(c.value)}</span></div>
+    `).join('');
+    document.getElementById('settings-guardrails').innerHTML = s.guardrails.map(g => `
+      <div class="guard-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v4M12 16h.01"/><circle cx="12" cy="12" r="10"/></svg><div><b>${escapeHtml(g.title)}</b><span>${escapeHtml(g.detail)}</span></div></div>
+    `).join('');
+  }
+
+  // ---------------------------------------------------------------------
+  // Initial load
+  // ---------------------------------------------------------------------
+  loadClinicStatus();
+  loadSchedule(selectedDate);
+</script>
+
+</body>
+</html>

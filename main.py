@@ -42,8 +42,11 @@ def main() -> None:
             print("Goodbye!")
             break
 
-        reply = agent.send(user_input)
-        print(f"Clara: {reply}\n")
+        result = agent.send(user_input)
+        print(f"Clara: {result['reply']}")
+        for call in result["tool_calls"]:
+            print(f"  {call['trace']}")
+        print()
 
 
 if __name__ == "__main__":

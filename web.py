@@ -147,5 +147,34 @@ def api_chat_reset():
     return jsonify({"status": "reset"})
 
 
+@app.route("/api/book", methods=["POST"])
+def api_book():
+    """Direct booking endpoint used by the dashboard/clients.
+
+    Expects JSON: { patient_name, doctor_name, date, time, reason }
+    Returns the result of `tools.book_appointment`.
+    """
+    err = _require_api_key()
+    if err:
+        return err
+
+    body = request.get_json(silent=True) or {}
+    patient_name = (body.get("patient_name") or "").strip()
+    doctor_name = (body.get("doctor_name") or "").strip()
+    date = (body.get("date") or "").strip()
+    time = (body.get("time") or "").strip()
+    reason = (body.get("reason") or "").strip()
+
+    if not (patient_name and doctor_name and date and time):
+        return jsonify({"error": "Missing required fields: patient_name, doctor_name, date, time"}), 400
+
+    try:
+        result = tools.book_appointment(patient_name, doctor_name, date, time, reason)
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 500
+
+    return jsonify(result)
+
+
 if __name__ == "__main__":
     app.run(debug=True, port=5000)

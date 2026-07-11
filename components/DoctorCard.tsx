@@ -30,10 +30,14 @@ export default function DoctorCard({ doctor, onBook, href }: Props) {
 
         <div className="flex-1">
           <h3 className="text-lg font-semibold text-slate-900">{doctor.name}</h3>
-          <div className="mt-1 flex items-center gap-2">
+          <div className="mt-1 flex flex-wrap items-center gap-2">
             <span className="text-sm px-2 py-1 rounded-full bg-blue-50 text-blue-700 font-medium">{doctor.specialty}</span>
             <span className="text-sm text-slate-500">{doctor.experience} yrs</span>
           </div>
+
+          {doctor.location && (
+            <div className="mt-2 text-sm text-slate-500">{doctor.location}</div>
+          )}
 
           <p className="mt-3 text-sm text-slate-600 line-clamp-2">{doctor.bio}</p>
 

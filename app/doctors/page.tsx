@@ -2,6 +2,7 @@
 
 import React, { useMemo, useState, useRef, useEffect } from 'react';
 import doctorsData, { Doctor } from '../../data/doctors';
+import chatHistory, { ChatHistoryItem } from '../../data/chatHistory';
 import DoctorCard from '../../components/DoctorCard';
 
 export default function DoctorsPage() {
@@ -19,7 +20,11 @@ export default function DoctorsPage() {
     return doctorsData.filter((d) => {
       if (specialty !== 'All' && d.specialty !== specialty) return false;
       if (!q) return true;
-      return d.name.toLowerCase().includes(q) || d.specialty.toLowerCase().includes(q);
+      return (
+        d.name.toLowerCase().includes(q) ||
+        d.specialty.toLowerCase().includes(q) ||
+        (d.location?.toLowerCase() ?? '').includes(q)
+      );
     });
   }, [query, specialty]);
 
@@ -104,6 +109,38 @@ export default function DoctorsPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {filtered.map((d: Doctor) => (
             <DoctorCard key={d.id} doctor={d} onBook={openBookingModal} />
+          ))}
+        </div>
+      </section>
+
+      <section className="mt-10">
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <div>
+            <h2 className="text-2xl font-semibold">Recent chat history</h2>
+            <p className="text-sm text-slate-600">Patient conversations with doctors and Clara’s latest follow-up status.</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 gap-4">
+          {chatHistory.map((thread: ChatHistoryItem) => (
+            <div key={thread.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-4 shadow-sm">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <div className="text-sm text-slate-500">{thread.patientName} → {thread.doctorName}</div>
+                  <p className="mt-1 text-base font-medium text-slate-900">{thread.snippet}</p>
+                </div>
+                <span className={`rounded-full px-3 py-1 text-sm font-semibold ${
+                  thread.status === 'New'
+                    ? 'bg-emerald-100 text-emerald-700'
+                    : thread.status === 'Follow-up'
+                    ? 'bg-amber-100 text-amber-700'
+                    : 'bg-slate-100 text-slate-600'
+                }`}>
+                  {thread.status}
+                </span>
+              </div>
+              <div className="mt-3 text-sm text-slate-500">{thread.timestamp}</div>
+            </div>
           ))}
         </div>
       </section>

@@ -70,31 +70,100 @@ CREATE TABLE IF NOT EXISTS thread_messages (
 SAMPLE_DOCTORS = [
     # name, specialty, bio, experience_years, rating, patients_per_week
     (
-        "Dr. Whitfield",
+        "Dr. Amina Javed",
         "Family Medicine",
-        "Sees patients of all ages for check-ups, chronic condition management, "
-        "and general follow-ups. Prefers morning slots for new patients.",
-        11,
+        "Provides comprehensive care for families and chronic conditions with a calm, patient-centered approach.",
+        14,
         4.9,
-        32,
+        38,
     ),
     (
-        "Dr. Osei",
-        "Internal Medicine",
-        "Handles new patient intakes and complex cases requiring longer visits. "
-        "Runs slightly behind schedule on Mondays.",
-        7,
+        "Dr. Saad Ahmed",
+        "Cardiology",
+        "Expert in heart health, hypertension, and preventive cardiology for adult patients.",
+        12,
         4.8,
+        30,
+    ),
+    (
+        "Dr. Zainab Bashir",
+        "Pediatrics",
+        "Specializes in pediatric wellness, immunizations, and developmental care for children and teens.",
+        9,
+        4.9,
+        26,
+    ),
+    (
+        "Dr. Omar Nazir",
+        "General Surgery",
+        "Balances clinic consultations with procedural care, focusing on timely referrals and surgical planning.",
+        16,
+        4.8,
+        22,
+    ),
+    (
+        "Dr. Nadia Hussain",
+        "Dermatology",
+        "Offers skin care, acne management, and cosmetic dermatology recommendations with clear follow-up plans.",
+        11,
+        4.7,
+        20,
+    ),
+    (
+        "Dr. Khalid Raza",
+        "Neurology",
+        "Provides diagnostic assessments for headaches, neuropathy, and movement disorders in adults.",
+        13,
+        4.8,
+        18,
+    ),
+    (
+        "Dr. Mariam Siddiqui",
+        "Obstetrics & Gynecology",
+        "Dedicated to women’s health, prenatal care, and reproductive wellness with supportive bedside care.",
+        10,
+        4.9,
         24,
     ),
     (
-        "Dr. Chen",
-        "Pediatrics",
-        "Focuses on vaccinations, growth check-ups, and pediatric care. Parents "
-        "can request her directly for children under 12.",
-        5,
-        5.0,
-        28,
+        "Dr. Tahir Qureshi",
+        "ENT",
+        "Treats sinus, ear, and throat conditions with same-day follow-up planning for persistent symptoms.",
+        8,
+        4.6,
+        16,
+    ),
+    (
+        "Dr. Fatima Noor",
+        "Endocrinology",
+        "Manages diabetes, thyroid conditions, and hormonal health with personalized care plans.",
+        12,
+        4.8,
+        20,
+    ),
+    (
+        "Dr. Bilal Javed",
+        "Gastroenterology",
+        "Treats digestive health, IBS, and liver concerns using evidence-based evaluation and follow-up.",
+        15,
+        4.7,
+        18,
+    ),
+    (
+        "Dr. Hassan Rizvi",
+        "Orthopedics",
+        "Focused on joint pain, sports injuries, and rehabilitation planning for active patients.",
+        13,
+        4.8,
+        22,
+    ),
+    (
+        "Dr. Saira Khan",
+        "Psychiatry",
+        "Supports mental health, anxiety, and mood care with a thoughtful, confidential approach.",
+        11,
+        4.7,
+        14,
     ),
 ]
 
@@ -132,9 +201,11 @@ def get_connection():
 
 
 def _seed_demo_data(conn: sqlite3.Connection) -> None:
-    """Populate doctors/patients/appointments/threads with data mirroring the
-    dashboard mockup, anchored on the real current date so the schedule page
-    isn't empty on first run."""
+    """Populate doctors/patients/appointments/threads with demo data.
+    The seed mirrors the original dashboard mockup but uses the Pakistani
+    doctor profiles defined in SAMPLE_DOCTORS and the SAMPLE_PATIENTS list.
+    """
+    # Insert doctors and patients
     conn.executemany(
         "INSERT INTO doctors (name, specialty, bio, experience_years, rating, patients_per_week) "
         "VALUES (?, ?, ?, ?, ?, ?)",
@@ -145,16 +216,17 @@ def _seed_demo_data(conn: sqlite3.Connection) -> None:
         SAMPLE_PATIENTS,
     )
 
+    # Anchor demo appointments on the next weekday so the schedule page isn't empty
     today = _next_weekday(date.today())
     today_s = today.isoformat()
 
     demo_appointments = [
-        ("Hassan Iqbal", "Dr. Whitfield", today_s, "09:00", "Annual check-up", "booked"),
-        ("Sara Malik", "Dr. Osei", today_s, "10:00", "New patient", "booked"),
-        ("Bilal Khan", "Dr. Whitfield", today_s, "10:00", "Follow-up", "cancelled"),
-        ("Waiting on confirmation", "Dr. Osei", today_s, "13:00", "Requested by phone", "pending"),
-        ("Amina Raza", "Dr. Whitfield", today_s, "14:00", "Follow-up", "booked"),
-        ("Yusuf Tariq", "Dr. Chen", today_s, "15:00", "Vaccination", "booked"),
+        ("Hassan Iqbal", "Dr. Amina Javed", today_s, "09:00", "Annual check-up", "booked"),
+        ("Sara Malik", "Dr. Saad Ahmed", today_s, "10:00", "New patient", "booked"),
+        ("Bilal Khan", "Dr. Amina Javed", today_s, "10:00", "Follow-up", "cancelled"),
+        ("Waiting on confirmation", "Dr. Saad Ahmed", today_s, "13:00", "Requested by phone", "pending"),
+        ("Amina Raza", "Dr. Amina Javed", today_s, "14:00", "Follow-up", "booked"),
+        ("Yusuf Tariq", "Dr. Zainab Bashir", today_s, "15:00", "Vaccination", "booked"),
     ]
     conn.executemany(
         "INSERT INTO appointments (patient_name, doctor_name, date, time, reason, status) "
@@ -162,7 +234,7 @@ def _seed_demo_data(conn: sqlite3.Connection) -> None:
         demo_appointments,
     )
 
-    # Patient message threads (mirrors the Messages page in the mockup).
+    # Patient message threads
     threads = [
         ("Noor Fatima", "SMS"),
         ("Ahmed Raza", "SMS"),
@@ -178,21 +250,15 @@ def _seed_demo_data(conn: sqlite3.Connection) -> None:
         thread_ids[patient_name] = cur.lastrowid
 
     demo_messages = [
-        (thread_ids["Noor Fatima"], "patient", "Can I cancel my 3pm with Dr. Chen today?", None),
+        (thread_ids["Noor Fatima"], "patient", "Can I cancel my 3pm with Dr. Amina Javed today?", None),
         (
             thread_ids["Noor Fatima"],
             "clara",
-            "Of course — I've cancelled your 3:00 PM vaccination appointment with Dr. Chen. "
-            "Would you like to rebook for another day?",
+            "Of course — I've cancelled your 3:00 PM vaccination appointment. Would you like to rebook for another day?",
             'cancel_appointment(patient: "Noor Fatima", slot: "15:00")',
         ),
         (thread_ids["Noor Fatima"], "patient", "Next Tuesday if possible", None),
-        (
-            thread_ids["Noor Fatima"],
-            "clara",
-            "Dr. Chen has 10:30 AM or 1:15 PM open next Tuesday. Which works better?",
-            None,
-        ),
+        (thread_ids["Noor Fatima"], "clara", "Dr. Zainab has 10:30 AM or 1:15 PM open next Tuesday.", None),
         (thread_ids["Ahmed Raza"], "patient", "Thanks, see you Thursday!", None),
         (thread_ids["Zainab Sheikh"], "patient", "Do you have parking on site?", None),
         (thread_ids["Omar Farooq"], "patient", "Rescheduled to next week, thank you", None),

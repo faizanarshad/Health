@@ -1,6 +1,6 @@
 """Unit tests for tools.py. No API key or network access required."""
 import sys
-from datetime import datetime
+from datetime import date, datetime, timedelta
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -23,13 +23,16 @@ def fresh_db(monkeypatch, tmp_path):
 def test_list_doctors_seeded():
     doctors = tools.list_doctors()
     names = {d["name"] for d in doctors}
-    assert "Dr. Whitfield" in names
-    assert len(doctors) == 3
+    assert "Dr. Amina Javed" in names
+    assert len(doctors) == 12
 
 
 def test_check_availability_full_day():
-    result = tools.check_availability("Dr. Whitfield", "2026-07-13")  # a Monday, unrelated to seeded "today" data
-    assert result["doctor"] == "Dr. Whitfield"
+    future_date = (date.today() + timedelta(days=30))
+    while future_date.weekday() >= 5:
+        future_date += timedelta(days=1)
+    result = tools.check_availability("Dr. Amina Javed", future_date.strftime("%Y-%m-%d"))
+    assert result["doctor"] == "Dr. Amina Javed"
     assert len(result["available_slots"]) == len(db.CLINIC_HOURS)
 
 
@@ -44,28 +47,36 @@ def test_check_availability_weekend_rejected():
 
 
 def test_book_and_prevent_double_booking():
+    future_date = (date.today() + timedelta(days=30))
+    while future_date.weekday() >= 5:
+        future_date += timedelta(days=1)
+    date_str = future_date.strftime("%Y-%m-%d")
     booked = tools.book_appointment(
-        "Jane Doe", "Dr. Whitfield", "2026-07-13", "09:00", reason="checkup"
+        "Jane Doe", "Dr. Amina Javed", date_str, "09:00", reason="checkup"
     )
     assert booked["status"] == "booked"
 
-    clash = tools.book_appointment("John Roe", "Dr. Whitfield", "2026-07-13", "09:00")
+    clash = tools.book_appointment("John Roe", "Dr. Amina Javed", date_str, "09:00")
     assert "error" in clash
 
 
 def test_book_rejects_invalid_time():
     with pytest.raises(ValueError):
-        tools.book_appointment("Jane Doe", "Dr. Whitfield", "2026-07-13", "09:15")
+        tools.book_appointment("Jane Doe", "Dr. Amina Javed", "2026-07-13", "09:15")
 
 
 def test_cancel_appointment_frees_slot():
-    booked = tools.book_appointment("Jane Doe", "Dr. Whitfield", "2026-07-13", "10:00")
+    future_date = (date.today() + timedelta(days=30))
+    while future_date.weekday() >= 5:
+        future_date += timedelta(days=1)
+    date_str = future_date.strftime("%Y-%m-%d")
+    booked = tools.book_appointment("Jane Doe", "Dr. Amina Javed", date_str, "10:00")
     appointment_id = booked["appointment_id"]
 
     cancelled = tools.cancel_appointment(appointment_id)
     assert cancelled["status"] == "cancelled"
 
-    availability = tools.check_availability("Dr. Whitfield", "2026-07-13")
+    availability = tools.check_availability("Dr. Amina Javed", date_str)
     assert "10:00" in availability["available_slots"]
 
 
@@ -75,13 +86,17 @@ def test_cancel_unknown_appointment():
 
 
 def test_list_appointments_only_shows_booked():
-    b1 = tools.book_appointment("Jane Doe", "Dr. Whitfield", "2026-07-13", "09:00")
-    tools.book_appointment("Jane Doe", "Dr. Osei", "2026-07-14", "11:00")
+    future_date = (date.today() + timedelta(days=30))
+    while future_date.weekday() >= 5:
+        future_date += timedelta(days=1)
+    date_str = future_date.strftime("%Y-%m-%d")
+    b1 = tools.book_appointment("Jane Doe", "Dr. Amina Javed", date_str, "09:00")
+    tools.book_appointment("Jane Doe", "Dr. Saad Ahmed", date_str, "11:00")
     tools.cancel_appointment(b1["appointment_id"])
 
     appts = tools.list_appointments("Jane Doe")
     assert len(appts) == 1
-    assert appts[0]["doctor_name"] == "Dr. Osei"
+    assert appts[0]["doctor_name"] == "Dr. Saad Ahmed"
 
 
 def test_answer_faq_known_and_unknown():
@@ -109,10 +124,10 @@ def test_list_patients_seeded_and_shaped():
 def test_doctor_directory_has_profile_and_availability():
     today = datetime.now().strftime("%Y-%m-%d")
     directory = tools.doctor_directory(today)
-    assert len(directory) == 3
-    whitfield = next(d for d in directory if d["name"] == "Dr. Whitfield")
-    assert whitfield["specialty"] == "Family Medicine"
-    assert len(whitfield["availability_preview"]) == 6
+    assert len(directory) == 12
+    amina = next(d for d in directory if d["name"] == "Dr. Amina Javed")
+    assert amina["specialty"] == "Family Medicine"
+    assert len(amina["availability_preview"]) == 6
 
 
 def test_schedule_for_date_counts_seeded_appointments():

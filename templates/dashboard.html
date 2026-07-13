@@ -309,6 +309,20 @@
           <div class="chat-input">
             <input type="text" id="schedule-chat-input" placeholder="Ask Clara to book, cancel, or answer a question…">
             <button class="send-btn" id="schedule-send-btn"><svg viewBox="0 0 24 24"><use href="#icon-send" fill="none" stroke="currentColor"/></svg></button>
+            <button id="qb-toggle" class="send-btn" title="Quick book" style="margin-left:8px; background:var(--amber);">QB</button>
+          </div>
+
+          <div id="quick-book" style="display:none;padding:12px 20px;">
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+              <input id="qb-patient" placeholder="Patient name" style="padding:8px;border-radius:8px;border:1px solid var(--line);min-width:150px;" />
+              <select id="qb-doctor" style="padding:8px;border-radius:8px;border:1px solid var(--line);"></select>
+              <input id="qb-date" type="date" style="padding:8px;border-radius:8px;border:1px solid var(--line);" />
+              <input id="qb-time" type="time" step="1800" style="padding:8px;border-radius:8px;border:1px solid var(--line);" />
+              <input id="qb-reason" placeholder="Reason (optional)" style="padding:8px;border-radius:8px;border:1px solid var(--line);min-width:160px;" />
+              <button id="qb-submit" class="send-btn" title="Book" style="background:var(--teal-deep);">OK</button>
+              <button id="qb-cancel" class="send-btn" title="Cancel" style="background:#ccc;color:#000;">✕</button>
+            </div>
+            <div id="qb-msg" style="margin-top:8px;color:var(--ink-soft)"></div>
           </div>
         </div>
 
@@ -558,6 +572,53 @@
       return `<div class="tl-row"><div class="tl-time">${formatHourLabel(h)}</div><div class="tl-slots">${slotsHtml}</div></div>`;
     }).join('');
   }
+
+  // Quick book UI helpers
+  function toggleQuickBook(show){
+    const el = document.getElementById('quick-book');
+    if (show === undefined) show = el.style.display === 'none';
+    el.style.display = show ? 'block' : 'none';
+    if (show) populateQuickBookDoctors();
+  }
+
+  async function populateQuickBookDoctors(){
+    const sel = document.getElementById('qb-doctor');
+    sel.innerHTML = '';
+    const dateStr = new Date().toISOString().slice(0,10);
+    try{
+      const doctors = await fetch('/api/doctors?date=' + dateStr).then(r => r.json());
+      doctors.forEach(d => {
+        const opt = document.createElement('option'); opt.value = d.name; opt.textContent = d.name; sel.appendChild(opt);
+      });
+    }catch(e){ sel.innerHTML = '<option>Error loading</option>'; }
+  }
+
+  async function submitQuickBook(){
+    const patient = document.getElementById('qb-patient').value.trim();
+    const doctor = document.getElementById('qb-doctor').value;
+    const date = document.getElementById('qb-date').value;
+    const time = document.getElementById('qb-time').value;
+    const reason = document.getElementById('qb-reason').value.trim();
+    const msg = document.getElementById('qb-msg');
+    msg.textContent = '';
+    if (!patient || !doctor || !date || !time){ msg.textContent = 'Please fill patient, doctor, date and time.'; return; }
+    try{
+      const res = await fetch('/api/quick_book', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({patient_name:patient, doctor_name:doctor, date, time, reason})});
+      const data = await res.json();
+      if (res.ok){
+        msg.textContent = data.message;
+        renderChatMessage(scheduleThread, {sender:'clara', text: data.message});
+        toggleQuickBook(false);
+        loadSchedule(selectedDate);
+      } else {
+        msg.textContent = data.error || JSON.stringify(data);
+      }
+    }catch(e){ msg.textContent = 'Error: ' + e.message; }
+  }
+
+  document.getElementById('qb-toggle').addEventListener('click', () => toggleQuickBook());
+  document.getElementById('qb-cancel').addEventListener('click', () => toggleQuickBook(false));
+  document.getElementById('qb-submit').addEventListener('click', submitQuickBook);
 
   async function loadClinicStatus(){
     try {

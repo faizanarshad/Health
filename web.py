@@ -176,6 +176,35 @@ def api_book():
     return jsonify(result)
 
 
+@app.route("/api/quick_book", methods=["POST"])
+def api_quick_book():
+    """Minimal booking endpoint for fast UI flows.
+
+    Expects JSON: { patient_name, doctor_name, date, time, reason }
+    Returns concise confirmation or error.
+    """
+    body = request.get_json(silent=True) or {}
+    patient_name = (body.get("patient_name") or "").strip()
+    doctor_name = (body.get("doctor_name") or "").strip()
+    date = (body.get("date") or "").strip()
+    time = (body.get("time") or "").strip()
+    reason = (body.get("reason") or "").strip()
+
+    if not (patient_name and doctor_name and date and time):
+        return jsonify({"error": "Missing required fields: patient_name, doctor_name, date, time"}), 400
+
+    try:
+        result = tools.book_appointment(patient_name, doctor_name, date, time, reason)
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 500
+
+    if "error" in result:
+        return jsonify(result), 400
+
+    message = f"Booked: {patient_name} with {doctor_name} on {date} at {time}."
+    return jsonify({"status": "ok", "message": message, "appointment": result})
+
+
 if __name__ == "__main__":
     # Allow overriding host/port via environment (useful when port 5000
     # is occupied by system services like AirPlay). Example:

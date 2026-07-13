@@ -177,4 +177,9 @@ def api_book():
 
 
 if __name__ == "__main__":
-    app.run(debug=True, port=5000)
+    # Allow overriding host/port via environment (useful when port 5000
+    # is occupied by system services like AirPlay). Example:
+    # PORT=5001 HOST=127.0.0.1 python web.py
+    host = os.environ.get("HOST", "127.0.0.1")
+    port = int(os.environ.get("PORT", "5000"))
+    app.run(debug=True, host=host, port=port)

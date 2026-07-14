@@ -70,15 +70,15 @@ CREATE TABLE IF NOT EXISTS thread_messages (
 SAMPLE_DOCTORS = [
     # name, specialty, bio, experience_years, rating, patients_per_week
     (
-        "Dr. Amina Javed",
+        "Dr. Emily Grant",
         "Family Medicine",
-        "Provides comprehensive care for families and chronic conditions with a calm, patient-centered approach.",
+        "Provides comprehensive care for families, preventive screenings, and chronic condition management with a warm, patient-centered approach.",
         14,
         4.9,
         38,
     ),
     (
-        "Dr. Saad Ahmed",
+        "Dr. Michael Hart",
         "Cardiology",
         "Expert in heart health, hypertension, and preventive cardiology for adult patients.",
         12,
@@ -86,7 +86,7 @@ SAMPLE_DOCTORS = [
         30,
     ),
     (
-        "Dr. Zainab Bashir",
+        "Dr. Olivia Chen",
         "Pediatrics",
         "Specializes in pediatric wellness, immunizations, and developmental care for children and teens.",
         9,
@@ -94,7 +94,7 @@ SAMPLE_DOCTORS = [
         26,
     ),
     (
-        "Dr. Omar Nazir",
+        "Dr. Daniel Brooks",
         "General Surgery",
         "Balances clinic consultations with procedural care, focusing on timely referrals and surgical planning.",
         16,
@@ -102,7 +102,7 @@ SAMPLE_DOCTORS = [
         22,
     ),
     (
-        "Dr. Nadia Hussain",
+        "Dr. Rachel Turner",
         "Dermatology",
         "Offers skin care, acne management, and cosmetic dermatology recommendations with clear follow-up plans.",
         11,
@@ -110,7 +110,7 @@ SAMPLE_DOCTORS = [
         20,
     ),
     (
-        "Dr. Khalid Raza",
+        "Dr. Kevin Patel",
         "Neurology",
         "Provides diagnostic assessments for headaches, neuropathy, and movement disorders in adults.",
         13,
@@ -118,7 +118,7 @@ SAMPLE_DOCTORS = [
         18,
     ),
     (
-        "Dr. Mariam Siddiqui",
+        "Dr. Sophia Martinez",
         "Obstetrics & Gynecology",
         "Dedicated to women’s health, prenatal care, and reproductive wellness with supportive bedside care.",
         10,
@@ -126,7 +126,7 @@ SAMPLE_DOCTORS = [
         24,
     ),
     (
-        "Dr. Tahir Qureshi",
+        "Dr. Brandon Lee",
         "ENT",
         "Treats sinus, ear, and throat conditions with same-day follow-up planning for persistent symptoms.",
         8,
@@ -134,7 +134,7 @@ SAMPLE_DOCTORS = [
         16,
     ),
     (
-        "Dr. Fatima Noor",
+        "Dr. Ava Reynolds",
         "Endocrinology",
         "Manages diabetes, thyroid conditions, and hormonal health with personalized care plans.",
         12,
@@ -142,7 +142,7 @@ SAMPLE_DOCTORS = [
         20,
     ),
     (
-        "Dr. Bilal Javed",
+        "Dr. Noah Walker",
         "Gastroenterology",
         "Treats digestive health, IBS, and liver concerns using evidence-based evaluation and follow-up.",
         15,
@@ -150,7 +150,7 @@ SAMPLE_DOCTORS = [
         18,
     ),
     (
-        "Dr. Hassan Rizvi",
+        "Dr. Grace Johnson",
         "Orthopedics",
         "Focused on joint pain, sports injuries, and rehabilitation planning for active patients.",
         13,
@@ -158,7 +158,7 @@ SAMPLE_DOCTORS = [
         22,
     ),
     (
-        "Dr. Saira Khan",
+        "Dr. Samuel Price",
         "Psychiatry",
         "Supports mental health, anxiety, and mood care with a thoughtful, confidential approach.",
         11,
@@ -169,12 +169,12 @@ SAMPLE_DOCTORS = [
 
 SAMPLE_PATIENTS = [
     # name, sex, age, phone, insurance, status
-    ("Hassan Iqbal", "M", 42, "+92-300-0000001", "Bupa", "Active"),
-    ("Sara Malik", "F", 29, "+92-300-0000002", "Cigna", "New patient"),
-    ("Amina Raza", "F", 35, "+92-300-0000003", "Self-pay", "Active"),
-    ("Yusuf Tariq", "M", 8, "+92-300-0000004", "Bupa", "Active"),
-    ("Bilal Khan", "M", 51, "+92-300-0000005", "Cigna", "Cancelled visit"),
-    ("Noor Fatima", "F", 31, "+92-300-0000006", "Bupa", "Active"),
+    ("Hannah Moore", "F", 42, "+1-202-555-0101", "Blue Cross", "Active"),
+    ("Mia Carter", "F", 29, "+1-202-555-0102", "UnitedHealthcare", "New patient"),
+    ("Ethan Brooks", "M", 35, "+1-202-555-0103", "Aetna", "Active"),
+    ("Liam Foster", "M", 8, "+1-202-555-0104", "Cigna", "Active"),
+    ("Noah Thompson", "M", 51, "+1-202-555-0105", "Aetna", "Cancelled visit"),
+    ("Ava Miller", "F", 31, "+1-202-555-0106", "Cigna", "Active"),
 ]
 
 # Clinic operates 09:00-17:00 in 30-minute slots, Mon-Fri.
@@ -221,12 +221,12 @@ def _seed_demo_data(conn: sqlite3.Connection) -> None:
     today_s = today.isoformat()
 
     demo_appointments = [
-        ("Hassan Iqbal", "Dr. Amina Javed", today_s, "09:00", "Annual check-up", "booked"),
-        ("Sara Malik", "Dr. Saad Ahmed", today_s, "10:00", "New patient", "booked"),
-        ("Bilal Khan", "Dr. Amina Javed", today_s, "10:00", "Follow-up", "cancelled"),
-        ("Waiting on confirmation", "Dr. Saad Ahmed", today_s, "13:00", "Requested by phone", "pending"),
-        ("Amina Raza", "Dr. Amina Javed", today_s, "14:00", "Follow-up", "booked"),
-        ("Yusuf Tariq", "Dr. Zainab Bashir", today_s, "15:00", "Vaccination", "booked"),
+        ("Hannah Moore", "Dr. Emily Grant", today_s, "09:00", "Annual check-up", "booked"),
+        ("Mia Carter", "Dr. Michael Hart", today_s, "10:00", "New patient", "booked"),
+        ("Noah Thompson", "Dr. Emily Grant", today_s, "10:00", "Follow-up", "cancelled"),
+        ("Waiting on confirmation", "Dr. Michael Hart", today_s, "13:00", "Requested by phone", "pending"),
+        ("Ethan Brooks", "Dr. Emily Grant", today_s, "14:00", "Follow-up", "booked"),
+        ("Liam Foster", "Dr. Olivia Chen", today_s, "15:00", "Vaccination", "booked"),
     ]
     conn.executemany(
         "INSERT INTO appointments (patient_name, doctor_name, date, time, reason, status) "
@@ -236,10 +236,10 @@ def _seed_demo_data(conn: sqlite3.Connection) -> None:
 
     # Patient message threads
     threads = [
-        ("Noor Fatima", "SMS"),
-        ("Ahmed Raza", "SMS"),
-        ("Zainab Sheikh", "SMS"),
-        ("Omar Farooq", "SMS"),
+        ("Ava Miller", "SMS"),
+        ("Lucas Reed", "SMS"),
+        ("Isabella Scott", "SMS"),
+        ("Noah Parker", "SMS"),
     ]
     thread_ids = {}
     for patient_name, channel in threads:
@@ -250,18 +250,18 @@ def _seed_demo_data(conn: sqlite3.Connection) -> None:
         thread_ids[patient_name] = cur.lastrowid
 
     demo_messages = [
-        (thread_ids["Noor Fatima"], "patient", "Can I cancel my 3pm with Dr. Amina Javed today?", None),
+        (thread_ids["Ava Miller"], "patient", "Can I cancel my 3pm with Dr. Emily Grant today?", None),
         (
-            thread_ids["Noor Fatima"],
+            thread_ids["Ava Miller"],
             "clara",
             "Of course — I've cancelled your 3:00 PM vaccination appointment. Would you like to rebook for another day?",
-            'cancel_appointment(patient: "Noor Fatima", slot: "15:00")',
+            'cancel_appointment(patient: "Ava Miller", slot: "15:00")',
         ),
-        (thread_ids["Noor Fatima"], "patient", "Next Tuesday if possible", None),
-        (thread_ids["Noor Fatima"], "clara", "Dr. Zainab has 10:30 AM or 1:15 PM open next Tuesday.", None),
-        (thread_ids["Ahmed Raza"], "patient", "Thanks, see you Thursday!", None),
-        (thread_ids["Zainab Sheikh"], "patient", "Do you have parking on site?", None),
-        (thread_ids["Omar Farooq"], "patient", "Rescheduled to next week, thank you", None),
+        (thread_ids["Ava Miller"], "patient", "Next Tuesday if possible", None),
+        (thread_ids["Ava Miller"], "clara", "Dr. Olivia Chen has 10:30 AM or 1:15 PM open next Tuesday.", None),
+        (thread_ids["Lucas Reed"], "patient", "Thanks, see you Thursday!", None),
+        (thread_ids["Isabella Scott"], "patient", "Do you have parking on site?", None),
+        (thread_ids["Noah Parker"], "patient", "Rescheduled to next week, thank you", None),
     ]
     conn.executemany(
         "INSERT INTO thread_messages (thread_id, sender, text, tool_line) VALUES (?, ?, ?, ?)",

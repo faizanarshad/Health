@@ -21,7 +21,7 @@ from . import database as db
 FAQ = {
     "hours": "The clinic is open Monday-Friday, 8:00 AM to 6:00 PM, and Saturday 9:00 AM to 1:00 PM. Closed Sundays.",
     "location": "Ridgeview Family Clinic — front desk can share the exact address and directions.",
-    "insurance": "We accept Bupa, Cigna Global, and self-pay patients. Please bring your insurance card to your first visit.",
+    "insurance": "We accept Blue Cross, UnitedHealthcare, Aetna, and Cigna. Please bring your insurance card to your first visit.",
     "cancellation": "Cancellations are free up to 24 hours before your appointment. Late cancellations incur a PKR 1,500 fee; no-shows incur PKR 3,000.",
     "new_patient": "New patients should arrive 15 minutes early to complete intake paperwork, or fill it out online beforehand.",
 }
@@ -289,9 +289,10 @@ def settings_snapshot() -> dict:
             {"label": "Sunday", "value": "Closed"},
         ],
         "insurance": [
-            {"label": "Bupa", "accepted": True},
-            {"label": "Cigna Global", "accepted": True},
-            {"label": "MedNet", "accepted": False},
+            {"label": "Blue Cross", "accepted": True},
+            {"label": "UnitedHealthcare", "accepted": True},
+            {"label": "Aetna", "accepted": True},
+            {"label": "Cigna", "accepted": True},
             {"label": "Self-pay", "accepted": True},
         ],
         "cancellation_policy": [

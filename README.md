@@ -99,10 +99,10 @@ python main.py
 
 ```
 You: What doctors do you have?
-Clara: We have Dr. Amina Javed (Family Medicine), Dr. Saad Ahmed (Cardiology), Dr. Zainab Bashir (Pediatrics).
+Clara: We have Dr. Emily Grant (Family Medicine), Dr. Michael Hart (Cardiology), Dr. Olivia Chen (Pediatrics).
 
-You: Book me with Dr. Amina Javed next Monday at 10am, I'm Jane Doe
-Clara: Confirming: Jane Doe with Dr. Amina Javed on 2026-07-13 at 10:00. Shall I book it?
+You: Book me with Dr. Emily Grant next Monday at 10am, I'm Jane Doe
+Clara: Confirming: Jane Doe with Dr. Emily Grant on 2026-07-13 at 10:00. Shall I book it?
 ```
 
 ## Reset to dummy data

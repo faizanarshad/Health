@@ -315,6 +315,7 @@
           <div id="quick-book" style="display:none;padding:12px 20px;">
             <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
               <input id="qb-patient" placeholder="Patient name" style="padding:8px;border-radius:8px;border:1px solid var(--line);min-width:150px;" />
+              <button id="qb-mic" class="send-btn" title="Voice input" style="background:#4B9F78;">🎤</button>
               <select id="qb-doctor" style="padding:8px;border-radius:8px;border:1px solid var(--line);"></select>
               <input id="qb-date" type="date" style="padding:8px;border-radius:8px;border:1px solid var(--line);" />
               <input id="qb-time" type="time" step="1800" style="padding:8px;border-radius:8px;border:1px solid var(--line);" />
@@ -322,6 +323,7 @@
               <button id="qb-submit" class="send-btn" title="Book" style="background:var(--teal-deep);">OK</button>
               <button id="qb-cancel" class="send-btn" title="Cancel" style="background:#ccc;color:#000;">✕</button>
             </div>
+            <div id="qb-transcript" style="margin-top:8px;color:var(--ink-soft);font-size:13px;"></div>
             <div id="qb-msg" style="margin-top:8px;color:var(--ink-soft)"></div>
           </div>
         </div>
@@ -619,6 +621,109 @@
   document.getElementById('qb-toggle').addEventListener('click', () => toggleQuickBook());
   document.getElementById('qb-cancel').addEventListener('click', () => toggleQuickBook(false));
   document.getElementById('qb-submit').addEventListener('click', submitQuickBook);
+
+  // ---------------------------------------------------------------------
+  // Voice input (Web Speech API) and TTS for quick-book
+  // ---------------------------------------------------------------------
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const synth = window.speechSynthesis;
+  let recognition = null;
+  let recognizing = false;
+
+  function speak(text){
+    if (!synth) return;
+    try{
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = 'en-US';
+      synth.cancel();
+      synth.speak(u);
+    }catch(e){ console.warn('TTS failed', e); }
+  }
+
+  function tryParseTime(text){
+    // Look for HH:MM or H AM/PM
+    let m = text.match(/(\d{1,2}:\d{2})/);
+    if(m) return m[1];
+    m = text.match(/(\d{1,2})\s?(am|pm)/i);
+    if(m){
+      let h = parseInt(m[1],10);
+      const ap = m[2].toLowerCase();
+      if(ap === 'pm' && h < 12) h += 12;
+      if(ap === 'am' && h === 12) h = 0;
+      return String(h).padStart(2,'0') + ':00';
+    }
+    return null;
+  }
+
+  function tryParseDate(text){
+    // ISO date
+    let m = text.match(/(\d{4}-\d{2}-\d{2})/);
+    if(m) return m[1];
+    // simple words: today/tomorrow
+    if (/tomorrow/i.test(text)){
+      const d = new Date(); d.setDate(d.getDate()+1); return d.toISOString().slice(0,10);
+    }
+    if (/today/i.test(text)){
+      return new Date().toISOString().slice(0,10);
+    }
+    return null;
+  }
+
+  function autoFillFromTranscript(text){
+    const low = text.toLowerCase();
+    document.getElementById('qb-transcript').textContent = 'Transcript: ' + text;
+    // attempt patient name
+    let name = null;
+    let m = text.match(/(?:my name is|i am|i'm)\s+([A-Z][a-z]+(?:\s[A-Z][a-z]+)*)/i);
+    if(m) name = m[1];
+    // fallback: if user only spoke a short name
+    if(!name && text.split(' ').length <= 4) name = text;
+    if(name) document.getElementById('qb-patient').value = name.trim();
+
+    // detect doctor from select options
+    const docSel = document.getElementById('qb-doctor');
+    for (let i=0;i<docSel.options.length;i++){
+      const opt = docSel.options[i];
+      if (text.toLowerCase().includes(opt.value.toLowerCase())){ docSel.selectedIndex = i; break; }
+    }
+
+    // parse date/time
+    const pd = tryParseDate(text);
+    if(pd) document.getElementById('qb-date').value = pd;
+    const pt = tryParseTime(text);
+    if(pt) document.getElementById('qb-time').value = pt;
+  }
+
+  function startRecognition(){
+    if (!SpeechRecognition){ alert('Speech recognition not supported in this browser. Use Chrome or Edge.'); return; }
+    recognition = new SpeechRecognition();
+    recognition.lang = 'en-US';
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+    recognition.onstart = () => { recognizing = true; document.getElementById('qb-mic').textContent = '●'; };
+    recognition.onerror = (e) => { console.warn('rec error', e); recognizing = false; document.getElementById('qb-mic').textContent = '🎤'; };
+    recognition.onend = () => { recognizing = false; document.getElementById('qb-mic').textContent = '🎤'; };
+    recognition.onresult = (ev) => {
+      const t = ev.results[0][0].transcript;
+      autoFillFromTranscript(t);
+    };
+    recognition.start();
+  }
+
+  document.getElementById('qb-mic').addEventListener('click', (e)=>{
+    if (recognizing && recognition) { recognition.stop(); recognizing = false; document.getElementById('qb-mic').textContent='🎤'; return; }
+    startRecognition();
+  });
+
+  // speak confirmation when quick book succeeds
+  const _origSubmitQuickBook = submitQuickBook;
+  async function submitQuickBookWithTTS(){
+    await _origSubmitQuickBook();
+    const msg = document.getElementById('qb-msg').textContent;
+    if (msg) speak(msg);
+  }
+  document.getElementById('qb-submit').removeEventListener('click', submitQuickBook);
+  document.getElementById('qb-submit').addEventListener('click', submitQuickBookWithTTS);
 
   async function loadClinicStatus(){
     try {

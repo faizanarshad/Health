@@ -86,6 +86,14 @@ Then visit http://127.0.0.1:5000. The dashboard has five pages:
 - **Settings** — clinic hours, accepted insurance, cancellation policy, and
   Clara's guardrails.
 
+Voice booking: The dashboard supports a quick voice booking flow on the
+Schedule → Quick Book panel. Click the microphone button, speak your booking
+request (for example: "Book John Doe with Dr. Emily Grant tomorrow at 9am"),
+then confirm the parsed fields and submit. Browser requirements: use a
+Chromium-based browser (Chrome/Edge) that supports the Web Speech API. The
+app will also read back a concise confirmation using the browser's Text-to-
+Speech engine.
+
 ![Clinic dashboard screenshot](docs/dashboard-schedule.png)
 
 This snapshot shows the Schedule page with the Ask Clara console, today's

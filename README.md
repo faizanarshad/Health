@@ -86,6 +86,13 @@ Then visit http://127.0.0.1:5000. The dashboard has five pages:
 - **Settings** — clinic hours, accepted insurance, cancellation policy, and
   Clara's guardrails.
 
+![Clinic dashboard screenshot](docs/dashboard-schedule.png)
+
+This snapshot shows the Schedule page with the Ask Clara console, today's
+appointment timeline, doctor availability chips, and the status summary cards
+(Booked / Pending / Cancelled). The web app also includes Messages, Patients,
+Doctors, and Settings pages for full clinic admin workflows.
+
 Pages that only display data (Patients, Doctors, Settings, the appointment
 timeline) work without an API key. The two chat surfaces (Schedule console,
 Messages replies) need `ANTHROPIC_API_KEY` and return a clear error if it's

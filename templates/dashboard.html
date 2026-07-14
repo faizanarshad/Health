@@ -198,6 +198,8 @@
   .toggle::after{ content:''; position:absolute; width:16px;height:16px; background:white; border-radius:50%; top:2px; right:2px; }
   .toggle.off{ background:#D8DEDC; }
   .toggle.off::after{ left:2px; right:auto; }
+  .send-btn.recording{ background:#d9534f; color:white; }
+  #qb-mic.recording{ box-shadow: 0 0 0 6px rgba(217,83,79,0.12); }
   .guard-item{ display:flex; align-items:flex-start; gap:10px; padding:10px 0; border-bottom:1px solid var(--line); }
   .guard-item:last-child{ border-bottom:none; }
   .guard-item svg{ width:16px;height:16px; color: var(--teal); flex-shrink:0; margin-top:2px; }
@@ -666,6 +668,20 @@
     if (/today/i.test(text)){
       return new Date().toISOString().slice(0,10);
     }
+    // next <weekday>
+    m = text.match(/next\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday)/i);
+    if(m){
+      const names = {monday:1,tuesday:2,wednesday:3,thursday:4,friday:5,saturday:6,sunday:0};
+      const target = names[m[1].toLowerCase()];
+      const today = new Date();
+      const diff = (target - today.getDay() + 7) % 7 || 7;
+      const d = new Date(); d.setDate(d.getDate() + diff); return d.toISOString().slice(0,10);
+    }
+    // in N days / weeks
+    m = text.match(/in\s+(\d+)\s+days?/i);
+    if(m){ const n = parseInt(m[1],10); const d = new Date(); d.setDate(d.getDate()+n); return d.toISOString().slice(0,10); }
+    m = text.match(/in\s+(\d+)\s+weeks?/i);
+    if(m){ const n = parseInt(m[1],10); const d = new Date(); d.setDate(d.getDate()+n*7); return d.toISOString().slice(0,10); }
     return null;
   }
 
@@ -700,14 +716,26 @@
     recognition.lang = 'en-US';
     recognition.interimResults = false;
     recognition.maxAlternatives = 1;
-    recognition.onstart = () => { recognizing = true; document.getElementById('qb-mic').textContent = '●'; };
-    recognition.onerror = (e) => { console.warn('rec error', e); recognizing = false; document.getElementById('qb-mic').textContent = '🎤'; };
-    recognition.onend = () => { recognizing = false; document.getElementById('qb-mic').textContent = '🎤'; };
+    recognition.onstart = () => { recognizing = true; document.getElementById('qb-mic').textContent = '● REC'; document.getElementById('qb-mic').classList.add('recording'); };
+    recognition.onerror = (e) => { console.warn('rec error', e); recognizing = false; document.getElementById('qb-mic').textContent = '🎤'; document.getElementById('qb-mic').classList.remove('recording'); };
+    recognition.onend = () => { recognizing = false; document.getElementById('qb-mic').textContent = '🎤'; document.getElementById('qb-mic').classList.remove('recording'); clearTimeout(recognitionTimeout); };
     recognition.onresult = (ev) => {
       const t = ev.results[0][0].transcript;
       autoFillFromTranscript(t);
     };
     recognition.start();
+    // auto-stop after timeout and allow automatic retry attempts
+    let attempts = 0;
+    const maxAttempts = 2;
+    window.recognitionRetry = async function(){
+      attempts += 1;
+      if (attempts > maxAttempts) { document.getElementById('qb-transcript').textContent = 'Voice failed after multiple attempts.'; return; }
+      try{ recognition.start(); }catch(e){ console.warn('retry start failed', e); }
+    };
+    recognitionTimeout = setTimeout(()=>{
+      try{ recognition.stop(); }catch(e){}
+      if(!recognizing && attempts < maxAttempts){ window.recognitionRetry(); }
+    }, 12000);
   }
 
   document.getElementById('qb-mic').addEventListener('click', (e)=>{

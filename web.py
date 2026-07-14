@@ -18,6 +18,7 @@ from flask import Flask, jsonify, render_template, request
 
 from src.healthagent import database as db
 from src.healthagent import tools
+from src.healthagent import nlp_utils as nlu
 from src.healthagent.agent import ClinicAgent
 
 load_dotenv()
@@ -192,6 +193,15 @@ def api_quick_book():
 
     if not (patient_name and doctor_name and date and time):
         return jsonify({"error": "Missing required fields: patient_name, doctor_name, date, time"}), 400
+
+    # Support natural-language dates (client may send "tomorrow" / "next monday" / "in 3 days")
+    try:
+        parsed = nlu.parse_natural_date(date)
+        if parsed:
+            date = parsed
+    except Exception:
+        # fall back to original string if parsing fails
+        pass
 
     try:
         result = tools.book_appointment(patient_name, doctor_name, date, time, reason)

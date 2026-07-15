@@ -26,7 +26,7 @@ def main() -> None:
         print("Make sure ANTHROPIC_API_KEY is set (see .env.example).")
         sys.exit(1)
 
-    print("Clara - Springfield Wellness Clinic assistant")
+    print(f"Clara - {db.CLINIC_NAME} assistant")
     print("Ask about appointments, availability, or clinic info. Type 'quit' to exit.\n")
 
     while True:

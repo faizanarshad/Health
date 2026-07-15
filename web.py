@@ -221,4 +221,8 @@ if __name__ == "__main__":
     # PORT=5001 HOST=127.0.0.1 python web.py
     host = os.environ.get("HOST", "127.0.0.1")
     port = int(os.environ.get("PORT", "5000"))
-    app.run(debug=True, host=host, port=port)
+    # Werkzeug's debugger allows remote code execution, so only default it on
+    # for loopback hosts; set FLASK_DEBUG=1 explicitly to force it elsewhere.
+    default_debug = host in ("127.0.0.1", "localhost")
+    debug = os.environ.get("FLASK_DEBUG", "1" if default_debug else "0") == "1"
+    app.run(debug=debug, host=host, port=port)

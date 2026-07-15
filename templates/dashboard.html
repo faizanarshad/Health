@@ -406,6 +406,18 @@
 </div>
 
 <script>
+  // `new Date(...).toISOString()` converts to UTC, which silently shifts to
+  // the wrong calendar day for any local time near midnight in a positive
+  // UTC-offset timezone (e.g. local midnight in UTC+5 becomes 19:00 the
+  // previous day in UTC). Every "what's today/this date" conversion in this
+  // file must go through local getters instead of toISOString().
+  function toLocalISODate(d){
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  }
+
   // ---------------------------------------------------------------------
   // Page navigation (unchanged from the original mockup)
   // ---------------------------------------------------------------------
@@ -463,7 +475,7 @@
   // Schedule page: "Ask Clara" console + today's timeline
   // ---------------------------------------------------------------------
   const scheduleThread = document.getElementById('schedule-chat-thread');
-  let selectedDate = new Date().toISOString().slice(0, 10);
+  let selectedDate = toLocalISODate(new Date());
 
   renderChatMessage(scheduleThread, {
     sender: 'clara',
@@ -509,11 +521,11 @@
     strip.innerHTML = '';
     const center = new Date(centerDateStr + 'T00:00:00');
     const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-    const todayStr = new Date().toISOString().slice(0, 10);
+    const todayStr = toLocalISODate(new Date());
     for (let offset = -center.getDay(); offset < 7 - center.getDay(); offset++){
       const d = new Date(center);
       d.setDate(center.getDate() + offset);
-      const dStr = d.toISOString().slice(0, 10);
+      const dStr = toLocalISODate(d);
       const chip = document.createElement('div');
       chip.className = 'day-chip' + (dStr === todayStr ? ' today' : '') + (dStr === selectedDate ? ' selected' : '');
       chip.innerHTML = `<div class="d">${dayNames[d.getDay()]}</div><div class="n">${String(d.getDate()).padStart(2,'0')}</div>`;
@@ -588,7 +600,7 @@
   async function populateQuickBookDoctors(){
     const sel = document.getElementById('qb-doctor');
     sel.innerHTML = '';
-    const dateStr = new Date().toISOString().slice(0,10);
+    const dateStr = toLocalISODate(new Date());
     try{
       const doctors = await fetch('/api/doctors?date=' + dateStr).then(r => r.json());
       doctors.forEach(d => {
@@ -643,9 +655,19 @@
   }
 
   function tryParseTime(text){
-    // Look for HH:MM or H AM/PM
-    let m = text.match(/(\d{1,2}:\d{2})/);
-    if(m) return m[1];
+    // Look for HH:MM (optionally with am/pm) or bare "H am/pm". Always
+    // zero-pad the returned hour — <input type="time"> silently rejects
+    // "5:00" and only accepts "05:00", so an unpadded value looks parsed
+    // here but never actually reaches the form field.
+    let m = text.match(/(\d{1,2}):(\d{2})\s*(am|pm)?/i);
+    if(m){
+      let h = parseInt(m[1],10);
+      const mins = m[2];
+      const ap = m[3] ? m[3].toLowerCase() : null;
+      if(ap === 'pm' && h < 12) h += 12;
+      if(ap === 'am' && h === 12) h = 0;
+      return String(h).padStart(2,'0') + ':' + mins;
+    }
     m = text.match(/(\d{1,2})\s?(am|pm)/i);
     if(m){
       let h = parseInt(m[1],10);
@@ -657,16 +679,29 @@
     return null;
   }
 
+  const MONTH_NAMES = {january:0,february:1,march:2,april:3,may:4,june:5,july:6,august:7,september:8,october:9,november:10,december:11};
+  const MONTH_RE = Object.keys(MONTH_NAMES).join('|');
+
+  // If a parsed month/day falls before today with no year spoken, assume
+  // the speaker means the next occurrence (e.g. "17 July" said in October
+  // means next year), rather than silently booking a date in the past.
+  function rollToFutureIfNeeded(d, yearWasSpoken){
+    if (yearWasSpoken) return d;
+    const today = new Date(); today.setHours(0,0,0,0);
+    if (d < today) d.setFullYear(d.getFullYear() + 1);
+    return d;
+  }
+
   function tryParseDate(text){
     // ISO date
     let m = text.match(/(\d{4}-\d{2}-\d{2})/);
     if(m) return m[1];
     // simple words: today/tomorrow
     if (/tomorrow/i.test(text)){
-      const d = new Date(); d.setDate(d.getDate()+1); return d.toISOString().slice(0,10);
+      const d = new Date(); d.setDate(d.getDate()+1); return toLocalISODate(d);
     }
     if (/today/i.test(text)){
-      return new Date().toISOString().slice(0,10);
+      return toLocalISODate(new Date());
     }
     // next <weekday>
     m = text.match(/next\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday)/i);
@@ -675,39 +710,137 @@
       const target = names[m[1].toLowerCase()];
       const today = new Date();
       const diff = (target - today.getDay() + 7) % 7 || 7;
-      const d = new Date(); d.setDate(d.getDate() + diff); return d.toISOString().slice(0,10);
+      const d = new Date(); d.setDate(d.getDate() + diff); return toLocalISODate(d);
     }
     // in N days / weeks
     m = text.match(/in\s+(\d+)\s+days?/i);
-    if(m){ const n = parseInt(m[1],10); const d = new Date(); d.setDate(d.getDate()+n); return d.toISOString().slice(0,10); }
+    if(m){ const n = parseInt(m[1],10); const d = new Date(); d.setDate(d.getDate()+n); return toLocalISODate(d); }
     m = text.match(/in\s+(\d+)\s+weeks?/i);
-    if(m){ const n = parseInt(m[1],10); const d = new Date(); d.setDate(d.getDate()+n*7); return d.toISOString().slice(0,10); }
+    if(m){ const n = parseInt(m[1],10); const d = new Date(); d.setDate(d.getDate()+n*7); return toLocalISODate(d); }
+    // day + month name, e.g. "17 July" or "17th of July" (optional year)
+    m = text.match(new RegExp(`(\\d{1,2})(?:st|nd|rd|th)?\\s+(?:of\\s+)?(${MONTH_RE})(?:\\s+(\\d{4}))?`, 'i'));
+    if(m){
+      const day = parseInt(m[1],10);
+      const month = MONTH_NAMES[m[2].toLowerCase()];
+      const year = m[3] ? parseInt(m[3],10) : new Date().getFullYear();
+      let d = new Date(year, month, day);
+      d = rollToFutureIfNeeded(d, !!m[3]);
+      return toLocalISODate(d);
+    }
+    // month name + day, e.g. "July 17" or "July 17th, 2026"
+    m = text.match(new RegExp(`(${MONTH_RE})\\s+(\\d{1,2})(?:st|nd|rd|th)?(?:,?\\s+(\\d{4}))?`, 'i'));
+    if(m){
+      const month = MONTH_NAMES[m[1].toLowerCase()];
+      const day = parseInt(m[2],10);
+      const year = m[3] ? parseInt(m[3],10) : new Date().getFullYear();
+      let d = new Date(year, month, day);
+      d = rollToFutureIfNeeded(d, !!m[3]);
+      return toLocalISODate(d);
+    }
     return null;
   }
 
+  function tryParseReason(text){
+    // Booking phrases often contain more than one trigger word (e.g. "book
+    // an appointment FOR John Doe ... FOR a checkup"); taking the first
+    // match would swallow the doctor/date/time into the reason. Use the
+    // LAST trigger word instead, since the real reason is typically what
+    // trails the sentence.
+    const triggerRe = /\b(?:for|because(?:\s+of)?|about|regarding)\s+/gi;
+    let end = -1;
+    let match;
+    while ((match = triggerRe.exec(text)) !== null) {
+      end = match.index + match[0].length;
+    }
+    if (end === -1) return null;
+    const phrase = text.slice(end).trim().replace(/\.$/, '');
+    return phrase || null;
+  }
+
   function autoFillFromTranscript(text){
-    const low = text.toLowerCase();
-    document.getElementById('qb-transcript').textContent = 'Transcript: ' + text;
+    const transcript = 'Transcript: ' + text;
+    const status = document.getElementById('qb-transcript');
+    status.textContent = transcript;
+    status.style.color = 'var(--ink-soft)';
+
     // attempt patient name
     let name = null;
-    let m = text.match(/(?:my name is|i am|i'm)\s+([A-Z][a-z]+(?:\s[A-Z][a-z]+)*)/i);
+    let m = text.match(/(?:my name is|i am|i'm|this is)\s+([A-Z][a-z]+(?:\s[A-Z][a-z]+)*)/i);
     if(m) name = m[1];
-    // fallback: if user only spoke a short name
-    if(!name && text.split(' ').length <= 4) name = text;
+    if(!name){
+      m = text.match(/patient\s+name\s+is\s+([A-Z][a-z]+(?:\s[A-Z][a-z]+)*)/i);
+      if(m) name = m[1];
+    }
+    if(!name){
+      // Natural phrasing like "appointment Mohammed Sahab Faizan Dr Brandon
+      // ..." names the patient as a capitalized run of words directly
+      // before the doctor mention, with no "my name is"/"with" filler.
+      m = text.match(/([A-Z][a-zA-Z]*(?:\s+[A-Z][a-zA-Z]*){0,3})\s+(?:with\s+)?(?:Dr\.?|Doctor)\s+/);
+      if(m){
+        // Strip a leading command/filler word in case the sentence's first
+        // word got capitalized (e.g. "Book John Doe with Dr ..." should
+        // yield "John Doe", not "Book John Doe").
+        const candidate = m[1].replace(/^(?:Book|Schedule|Reschedule|Cancel|Appointment|Please|Hi|Hello)\s+/i, '').trim();
+        if (candidate) name = candidate;
+      }
+    }
+    if(!name){
+      // Only treat the whole utterance as a bare name when it plausibly
+      // *is* just a name — every word alphabetic and no booking/command
+      // words or digits — otherwise phrases like "Cancel my appointment
+      // please" get misread as the patient's name.
+      const words = text.split(/\s+/).filter(Boolean);
+      const nonNameWords = /\b(book|cancel|reschedule|appointment|doctor|dr\.?|today|tomorrow|next|am|pm|reason|please|thanks|thank|you|hello|hi)\b/i;
+      const looksLikeNameOnly = words.length >= 1 && words.length <= 4
+        && words.every(w => /^[A-Za-z]+$/.test(w))
+        && !nonNameWords.test(text)
+        && !/\d/.test(text);
+      if (looksLikeNameOnly) name = words.join(' ');
+    }
     if(name) document.getElementById('qb-patient').value = name.trim();
 
-    // detect doctor from select options
+    // detect doctor from spoken text
     const docSel = document.getElementById('qb-doctor');
-    for (let i=0;i<docSel.options.length;i++){
-      const opt = docSel.options[i];
-      if (text.toLowerCase().includes(opt.value.toLowerCase())){ docSel.selectedIndex = i; break; }
+    const doctorMatch = text.match(/(?:dr\.?|doctor)\s+([A-Z][a-z]+(?:\s[A-Z][a-z]+)*)/i);
+    let doctorMatched = false;
+    if(doctorMatch){
+      // Speech rarely gives the doctor's full "First Last" name (e.g. just
+      // "Dr Brandon" for "Dr. Brandon Lee"), so an exact-string comparison
+      // against the select options almost never hits. Match on whether
+      // every spoken name word appears among the doctor's name words instead.
+      const spokenWords = doctorMatch[1].trim().toLowerCase().split(/\s+/);
+      for (let i = 0; i < docSel.options.length; i++){
+        const opt = docSel.options[i];
+        const optWords = opt.value.toLowerCase().replace(/^dr\.?\s+/, '').split(/\s+/);
+        if (spokenWords.every(w => optWords.includes(w))){
+          docSel.selectedIndex = i;
+          doctorMatched = true;
+          break;
+        }
+      }
+    }
+    if(!doctorMatched){
+      for (let i = 0; i < docSel.options.length; i++){
+        const opt = docSel.options[i];
+        if (text.toLowerCase().includes(opt.value.toLowerCase())){
+          docSel.selectedIndex = i;
+          break;
+        }
+      }
     }
 
-    // parse date/time
+    // parse date/time/reason
     const pd = tryParseDate(text);
     if(pd) document.getElementById('qb-date').value = pd;
     const pt = tryParseTime(text);
     if(pt) document.getElementById('qb-time').value = pt;
+    const reason = tryParseReason(text);
+    if(reason) document.getElementById('qb-reason').value = reason;
+
+    if (!document.getElementById('qb-patient').value || !document.getElementById('qb-doctor').value || !document.getElementById('qb-date').value || !document.getElementById('qb-time').value) {
+      status.textContent = transcript + ' — voice recognized, please confirm required fields.';
+      status.style.color = '#c65d00';
+    }
   }
 
   function startRecognition(){
@@ -717,7 +850,7 @@
     recognition.interimResults = false;
     recognition.maxAlternatives = 1;
     recognition.onstart = () => { recognizing = true; document.getElementById('qb-mic').textContent = '● REC'; document.getElementById('qb-mic').classList.add('recording'); };
-    recognition.onerror = (e) => { console.warn('rec error', e); recognizing = false; document.getElementById('qb-mic').textContent = '🎤'; document.getElementById('qb-mic').classList.remove('recording'); };
+    recognition.onerror = (e) => { console.warn('rec error', e); recognizing = false; const status=document.getElementById('qb-transcript'); status.textContent = 'Speech recognition error: ' + (e.error || 'unknown'); status.style.color = '#c65d00'; document.getElementById('qb-mic').textContent = '🎤'; document.getElementById('qb-mic').classList.remove('recording'); };
     recognition.onend = () => { recognizing = false; document.getElementById('qb-mic').textContent = '🎤'; document.getElementById('qb-mic').classList.remove('recording'); clearTimeout(recognitionTimeout); };
     recognition.onresult = (ev) => {
       const t = ev.results[0][0].transcript;
@@ -848,8 +981,9 @@
 
   function renderPatientRows(patients){
     const statusTag = (status) => {
-      if (status === 'Cancelled visit') return `<span class="tag" style="background:var(--rose-tint);color:var(--rose)">${status}</span>`;
-      return `<span class="tag">${status}</span>`;
+      const safe = escapeHtml(status);
+      if (status === 'Cancelled visit') return `<span class="tag" style="background:var(--rose-tint);color:var(--rose)">${safe}</span>`;
+      return `<span class="tag">${safe}</span>`;
     };
     document.getElementById('patient-rows').innerHTML = patients.map(p => `
       <div class="p-row">
@@ -877,7 +1011,7 @@
   // Doctors page
   // ---------------------------------------------------------------------
   async function loadDoctors(){
-    const dateStr = new Date().toISOString().slice(0, 10);
+    const dateStr = toLocalISODate(new Date());
     const doctors = await fetch('/api/doctors?date=' + dateStr).then(r => r.json());
     document.getElementById('doctors-count').textContent = `${doctors.length} on staff · Front desk reference`;
     document.getElementById('doctor-grid').innerHTML = doctors.map(d => `

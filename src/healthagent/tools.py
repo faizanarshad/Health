@@ -14,6 +14,7 @@ diagnose, triage, or give medical advice.
 """
 from __future__ import annotations
 
+import sqlite3
 from datetime import datetime
 
 from . import database as db
@@ -93,11 +94,17 @@ def book_appointment(patient_name: str, doctor_name: str, date: str, time: str, 
         if clash is not None:
             return {"error": f"{doctor_name} is already booked at {time} on {date}. Try another slot."}
 
-        cursor = conn.execute(
-            "INSERT INTO appointments (patient_name, doctor_name, date, time, reason, status) "
-            "VALUES (?, ?, ?, ?, ?, 'booked')",
-            (patient_name, doctor_name, date, time, reason),
-        )
+        # The pre-check above isn't atomic with the insert, so two concurrent
+        # requests for the same slot can both pass it; the unique partial
+        # index on (doctor_name, date, time) catches that case here.
+        try:
+            cursor = conn.execute(
+                "INSERT INTO appointments (patient_name, doctor_name, date, time, reason, status) "
+                "VALUES (?, ?, ?, ?, ?, 'booked')",
+                (patient_name, doctor_name, date, time, reason),
+            )
+        except sqlite3.IntegrityError:
+            return {"error": f"{doctor_name} is already booked at {time} on {date}. Try another slot."}
         appointment_id = cursor.lastrowid
 
     return {

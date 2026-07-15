@@ -65,6 +65,13 @@ CREATE TABLE IF NOT EXISTS thread_messages (
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     FOREIGN KEY (thread_id) REFERENCES message_threads (id)
 );
+
+-- Enforces one active (booked/pending) appointment per doctor/date/time slot
+-- at the database level, so concurrent bookings can't both pass the
+-- application-level clash check and double-book the same slot.
+CREATE UNIQUE INDEX IF NOT EXISTS idx_appointments_active_slot
+ON appointments (doctor_name, date, time)
+WHERE status IN ('booked', 'pending');
 """
 
 SAMPLE_DOCTORS = [
@@ -202,7 +209,7 @@ def get_connection():
 
 def _seed_demo_data(conn: sqlite3.Connection) -> None:
     """Populate doctors/patients/appointments/threads with demo data.
-    The seed mirrors the original dashboard mockup but uses the Pakistani
+    The seed mirrors the original dashboard mockup but uses the U.S.
     doctor profiles defined in SAMPLE_DOCTORS and the SAMPLE_PATIENTS list.
     """
     # Insert doctors and patients

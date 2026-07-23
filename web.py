@@ -1,8 +1,8 @@
-"""Flask backend for the Clara dashboard.
+"""Flask backend for the AssistMedica dashboard.
 
 Serves the dashboard UI (templates/dashboard.html) and a small JSON API that
 the dashboard's JavaScript calls to render the Schedule, Messages, Patients,
-Doctors, and Settings pages, and to talk to the Clara agent.
+Doctors, and Settings pages, and to talk to the AssistMedica agent.
 
 Run with:  python web.py   (then open http://localhost:5000)
 Requires ANTHROPIC_API_KEY for the chat endpoints; the read-only dashboard
@@ -26,7 +26,7 @@ db.init_db()
 
 app = Flask(__name__)
 
-# Single in-memory conversation for the front-desk "Ask Clara" console
+# Single in-memory conversation for the front-desk "Ask AssistMedica" console
 # (Schedule page). Resets when the server restarts.
 _console_agent: ClinicAgent | None = None
 
@@ -39,7 +39,7 @@ def _require_api_key():
     if not os.environ.get("ANTHROPIC_API_KEY"):
         return jsonify(
             {
-                "error": "ANTHROPIC_API_KEY is not set. Add it to your .env file to enable Clara's chat.",
+                "error": "ANTHROPIC_API_KEY is not set. Add it to your .env file to enable AssistMedica's chat.",
             }
         ), 503
     return None
@@ -52,7 +52,7 @@ def index():
 
 @app.route("/api/clinic")
 def api_clinic():
-    return jsonify({"name": db.CLINIC_NAME, "status": "Clara is online — handling front desk"})
+    return jsonify({"name": db.CLINIC_NAME, "status": "AssistMedica is online — handling front desk"})
 
 
 @app.route("/api/doctors")
@@ -107,8 +107,8 @@ def api_thread_reply(thread_id: int):
 
     tools.add_thread_message(thread_id, "patient", text)
 
-    # Rebuild a lightweight conversation from the thread history so Clara has
-    # context, then get her reply for the new message.
+    # Rebuild a lightweight conversation from the thread history so
+    # AssistMedica has context, then get her reply for the new message.
     history = [
         {"role": "user" if m["sender"] == "patient" else "assistant", "content": m["text"]}
         for m in thread["messages"]
@@ -117,7 +117,7 @@ def api_thread_reply(thread_id: int):
     result = agent.send(text)
 
     tool_line = result["tool_calls"][0]["trace"] if result["tool_calls"] else None
-    saved = tools.add_thread_message(thread_id, "clara", result["reply"], tool_line)
+    saved = tools.add_thread_message(thread_id, "assistmedica", result["reply"], tool_line)
 
     return jsonify({"reply": result["reply"], "tool_calls": result["tool_calls"], "message": saved})
 

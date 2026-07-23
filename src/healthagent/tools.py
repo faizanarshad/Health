@@ -277,7 +277,7 @@ def get_thread(thread_id: int) -> dict | None:
 
 
 def add_thread_message(thread_id: int, sender: str, text: str, tool_line: str | None = None) -> dict:
-    """Append a message to a thread (used for both patient replies and Clara's responses)."""
+    """Append a message to a thread (used for both patient replies and AssistMedica's responses)."""
     with db.get_connection() as conn:
         cursor = conn.execute(
             "INSERT INTO thread_messages (thread_id, sender, text, tool_line) VALUES (?, ?, ?, ?)",

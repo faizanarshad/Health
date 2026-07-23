@@ -26,7 +26,7 @@ def main() -> None:
         print("Make sure ANTHROPIC_API_KEY is set (see .env.example).")
         sys.exit(1)
 
-    print(f"Clara - {db.CLINIC_NAME} assistant")
+    print(f"AssistMedica - {db.CLINIC_NAME} assistant")
     print("Ask about appointments, availability, or clinic info. Type 'quit' to exit.\n")
 
     while True:
@@ -43,7 +43,7 @@ def main() -> None:
             break
 
         result = agent.send(user_input)
-        print(f"Clara: {result['reply']}")
+        print(f"AssistMedica: {result['reply']}")
         for call in result["tool_calls"]:
             print(f"  {call['trace']}")
         print()

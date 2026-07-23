@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Clara — {{ clinic_name }}</title>
+<title>AssistMedica — {{ clinic_name }}</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -75,10 +75,10 @@
   .msg.user{ flex-direction:row-reverse; }
   .msg-avatar{ width:28px;height:28px; }
   .msg-avatar svg{ width:16px; height:16px; }
-  .msg.clara .msg-avatar{ background: var(--teal); color:white; }
+  .msg.assistmedica .msg-avatar{ background: var(--teal); color:white; }
   .msg.user .msg-avatar{ background: var(--patient-tint); color: var(--patient); }
   .bubble{ padding: 10px 13px; border-radius: 12px; font-size: 13.3px; line-height:1.5; max-width: 82%; }
-  .msg.clara .bubble{ background: var(--teal-tint); color: var(--ink); border-top-left-radius: 3px; }
+  .msg.assistmedica .bubble{ background: var(--teal-tint); color: var(--ink); border-top-left-radius: 3px; }
   .msg.user .bubble{ background: #F1F3F2; border-top-right-radius: 3px; }
   .bubble.redirect{ background: var(--amber-tint); border: 1px solid #F0D9B3; }
   .bubble .redirect-tag{ display:block; font-size:10.5px; font-weight:700; color: #A0651E; letter-spacing:.04em; text-transform: uppercase; margin-bottom: 4px; }
@@ -284,7 +284,7 @@
         <div class="clinic-name">{{ clinic_name }}</div>
         <div class="page-label" id="page-label">Schedule</div>
       </div>
-      <div class="status-pill"><div class="status-dot"></div><span id="status-text">Clara is online — handling front desk</span></div>
+      <div class="status-pill"><div class="status-dot"></div><span id="status-text">AssistMedica is online — handling front desk</span></div>
     </div>
 
     <!-- ================= SCHEDULE PAGE ================= -->
@@ -301,7 +301,7 @@
                 <circle cx="30" cy="39" r="1.1" fill="#A0651E"/><circle cx="34" cy="39" r="1.1" fill="#A0651E"/><circle cx="38" cy="39" r="1.1" fill="#A0651E"/>
               </svg>
               <div>
-                <div class="panel-title">Ask Clara</div>
+                <div class="panel-title">Ask AssistMedica</div>
                 <div class="panel-sub">Scheduling &amp; front-desk questions only</div>
               </div>
             </div>
@@ -309,7 +309,7 @@
           </div>
           <div class="chat-thread" id="schedule-chat-thread"></div>
           <div class="chat-input">
-            <input type="text" id="schedule-chat-input" placeholder="Ask Clara to book, cancel, or answer a question…">
+            <input type="text" id="schedule-chat-input" placeholder="Ask AssistMedica to book, cancel, or answer a question…">
             <button class="send-btn" id="schedule-send-btn"><svg viewBox="0 0 24 24"><use href="#icon-send" fill="none" stroke="currentColor"/></svg></button>
             <button id="qb-toggle" class="send-btn" title="Quick book" style="margin-left:8px; background:var(--amber);">QB</button>
           </div>
@@ -340,7 +340,7 @@
           </div>
           <div class="week-strip" id="week-strip"></div>
           <div class="timeline" id="timeline"></div>
-          <div class="footnote"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v4M12 16h.01"/><circle cx="12" cy="12" r="10"/></svg>Clara handles scheduling and admin questions only — medical questions are always routed to a clinician.</div>
+          <div class="footnote"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v4M12 16h.01"/><circle cx="12" cy="12" r="10"/></svg>AssistMedica handles scheduling and admin questions only — medical questions are always routed to a clinician.</div>
         </div>
       </div>
     </div>
@@ -373,22 +373,22 @@
       <div class="settings-grid">
         <div class="settings-card">
           <h3>Clinic Hours</h3>
-          <div class="card-sub">Clara uses this to answer hours questions and block bookings outside these times.</div>
+          <div class="card-sub">AssistMedica uses this to answer hours questions and block bookings outside these times.</div>
           <div id="settings-hours"></div>
         </div>
         <div class="settings-card">
           <h3>Insurance Accepted</h3>
-          <div class="card-sub">Clara references this list when patients ask about coverage.</div>
+          <div class="card-sub">AssistMedica references this list when patients ask about coverage.</div>
           <div id="settings-insurance"></div>
         </div>
         <div class="settings-card">
           <h3>Cancellation Policy</h3>
-          <div class="card-sub">Shown to patients when they ask, and enforced when Clara processes a cancellation.</div>
+          <div class="card-sub">Shown to patients when they ask, and enforced when AssistMedica processes a cancellation.</div>
           <div id="settings-cancellation"></div>
         </div>
         <div class="settings-card">
-          <h3>Clara's Guardrails</h3>
-          <div class="card-sub">Enforced by the system prompt — Clara always redirects these.</div>
+          <h3>AssistMedica's Guardrails</h3>
+          <div class="card-sub">Enforced by the system prompt — AssistMedica always redirects these.</div>
           <div id="settings-guardrails"></div>
         </div>
       </div>
@@ -455,31 +455,31 @@
   }
 
   function renderChatMessage(container, {sender, text, toolLine}){
-    const isClara = sender === 'clara';
+    const isAssistMedica = sender === 'assistmedica';
     const wrap = document.createElement('div');
-    wrap.className = 'msg ' + (isClara ? 'clara' : 'user');
-    const redirect = isClara && looksLikeRedirect(text, toolLine ? [toolLine] : []);
+    wrap.className = 'msg ' + (isAssistMedica ? 'assistmedica' : 'user');
+    const redirect = isAssistMedica && looksLikeRedirect(text, toolLine ? [toolLine] : []);
     wrap.innerHTML = `
-      <div class="msg-avatar icon-circle" style="${isClara ? 'background:var(--teal)' : ''}">${isClara ? checkIcon : patientIcon}</div>
+      <div class="msg-avatar icon-circle" style="${isAssistMedica ? 'background:var(--teal)' : ''}">${isAssistMedica ? checkIcon : patientIcon}</div>
       <div class="bubble ${redirect ? 'redirect' : ''}">
         ${redirect ? '<span class="redirect-tag">Redirected — outside my scope</span>' : ''}
         ${escapeHtml(text)}
         ${toolLine ? `<div class="tool-line">${escapeHtml(toolLine)}</div>` : ''}
       </div>`;
-    if (!isClara) wrap.querySelector('.msg-avatar').classList.add('patient');
+    if (!isAssistMedica) wrap.querySelector('.msg-avatar').classList.add('patient');
     container.appendChild(wrap);
     container.scrollTop = container.scrollHeight;
   }
 
   // ---------------------------------------------------------------------
-  // Schedule page: "Ask Clara" console + today's timeline
+  // Schedule page: "Ask AssistMedica" console + today's timeline
   // ---------------------------------------------------------------------
   const scheduleThread = document.getElementById('schedule-chat-thread');
   let selectedDate = toLocalISODate(new Date());
 
   renderChatMessage(scheduleThread, {
-    sender: 'clara',
-    text: "Hi, I'm Clara. Ask me to check a doctor's availability, book or cancel an appointment, or answer a clinic question."
+    sender: 'assistmedica',
+    text: "Hi, I'm AssistMedica. Ask me to check a doctor's availability, book or cancel an appointment, or answer a clinic question."
   });
 
   async function sendConsoleMessage(){
@@ -497,16 +497,16 @@
       });
       const data = await res.json();
       if (data.error) {
-        renderChatMessage(scheduleThread, {sender: 'clara', text: data.error});
+        renderChatMessage(scheduleThread, {sender: 'assistmedica', text: data.error});
       } else {
         renderChatMessage(scheduleThread, {
-          sender: 'clara', text: data.reply,
+          sender: 'assistmedica', text: data.reply,
           toolLine: data.tool_calls && data.tool_calls.length ? data.tool_calls.map(t => t.trace).join('  ') : null,
         });
         loadSchedule(selectedDate); // refresh timeline in case something was booked/cancelled
       }
     } catch (e) {
-      renderChatMessage(scheduleThread, {sender: 'clara', text: 'Sorry, I could not reach the server: ' + e.message});
+      renderChatMessage(scheduleThread, {sender: 'assistmedica', text: 'Sorry, I could not reach the server: ' + e.message});
     } finally {
       btn.disabled = false;
     }
@@ -623,7 +623,7 @@
       const data = await res.json();
       if (res.ok){
         msg.textContent = data.message;
-        renderChatMessage(scheduleThread, {sender:'clara', text: data.message});
+        renderChatMessage(scheduleThread, {sender:'assistmedica', text: data.message});
         toggleQuickBook(false);
         loadSchedule(selectedDate);
       } else {
@@ -926,7 +926,7 @@
     view.innerHTML = `
       <div class="thread-view-head">
         <div class="icon-circle patient" style="width:36px;height:36px">${patientIcon}</div>
-        <div><div class="thread-view-name">${escapeHtml(thread.patient_name)}</div><div class="thread-view-channel">${escapeHtml(thread.channel)} · Handled by Clara</div></div>
+        <div><div class="thread-view-name">${escapeHtml(thread.patient_name)}</div><div class="thread-view-channel">${escapeHtml(thread.channel)} · Handled by AssistMedica</div></div>
       </div>
       <div class="thread-view-body" id="thread-view-body"></div>
       <div class="chat-input">
@@ -959,16 +959,16 @@
       });
       const data = await res.json();
       if (data.error) {
-        renderChatMessage(body, {sender: 'clara', text: data.error});
+        renderChatMessage(body, {sender: 'assistmedica', text: data.error});
       } else {
         renderChatMessage(body, {
-          sender: 'clara', text: data.reply,
+          sender: 'assistmedica', text: data.reply,
           toolLine: data.tool_calls && data.tool_calls.length ? data.tool_calls.map(t => t.trace).join('  ') : null,
         });
         loadThreads();
       }
     } catch (e) {
-      renderChatMessage(body, {sender: 'clara', text: 'Sorry, I could not reach the server: ' + e.message});
+      renderChatMessage(body, {sender: 'assistmedica', text: 'Sorry, I could not reach the server: ' + e.message});
     } finally {
       btn.disabled = false;
     }

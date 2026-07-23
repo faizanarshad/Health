@@ -59,7 +59,7 @@ CREATE TABLE IF NOT EXISTS message_threads (
 CREATE TABLE IF NOT EXISTS thread_messages (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     thread_id INTEGER NOT NULL,
-    sender TEXT NOT NULL,          -- 'patient' | 'clara'
+    sender TEXT NOT NULL,          -- 'patient' | 'assistmedica'
     text TEXT NOT NULL,
     tool_line TEXT,                -- optional "→ tool_name(...)" trace shown in the UI
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
@@ -260,12 +260,12 @@ def _seed_demo_data(conn: sqlite3.Connection) -> None:
         (thread_ids["Ava Miller"], "patient", "Can I cancel my 3pm with Dr. Emily Grant today?", None),
         (
             thread_ids["Ava Miller"],
-            "clara",
+            "assistmedica",
             "Of course — I've cancelled your 3:00 PM vaccination appointment. Would you like to rebook for another day?",
             'cancel_appointment(patient: "Ava Miller", slot: "15:00")',
         ),
         (thread_ids["Ava Miller"], "patient", "Next Tuesday if possible", None),
-        (thread_ids["Ava Miller"], "clara", "Dr. Olivia Chen has 10:30 AM or 1:15 PM open next Tuesday.", None),
+        (thread_ids["Ava Miller"], "assistmedica", "Dr. Olivia Chen has 10:30 AM or 1:15 PM open next Tuesday.", None),
         (thread_ids["Lucas Reed"], "patient", "Thanks, see you Thursday!", None),
         (thread_ids["Isabella Scott"], "patient", "Do you have parking on site?", None),
         (thread_ids["Noah Parker"], "patient", "Rescheduled to next week, thank you", None),

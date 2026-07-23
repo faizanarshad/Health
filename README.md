@@ -1,4 +1,4 @@
-# Clara — Clinic Admin Agent & Dashboard
+# AssistMedica — Clinic Admin Agent & Dashboard
 
 An AI front-desk agent for Ridgeview Family Clinic: checking doctor
 availability, booking and cancelling appointments, and answering common
@@ -6,7 +6,7 @@ questions (hours, location, insurance, cancellation policy). Built with the
 Anthropic API (Claude) using tool use, backed by a small SQLite database, with
 both a CLI and a full web dashboard.
 
-Clara is scoped to clinic administrative workflows only — she does not
+AssistMedica is scoped to clinic administrative workflows only — she does not
 diagnose, interpret symptoms, or give medical advice. The system prompt
 enforces this and redirects medical questions to a clinician or emergency
 services.
@@ -74,17 +74,17 @@ python web.py
 
 Then visit http://127.0.0.1:5000. The dashboard has five pages:
 
-- **Schedule** — an "Ask Clara" chat console (talks to the live agent) next to
+- **Schedule** — an "Ask AssistMedica" chat console (talks to the live agent) next to
   today's appointment timeline, doctor chips, and booked/pending/cancelled
   counts. Click a day in the week strip to view another day.
 - **Messages** — patient SMS-style threads. Replying to a thread runs the
-  message through Clara, including any booking/cancellation tool calls.
+  message through AssistMedica, including any booking/cancellation tool calls.
 - **Patients** — patient directory with last visit / next appointment /
   insurance / status, computed live from the appointments table.
 - **Doctors** — profile cards (bio, experience, rating, patients/week) with an
   availability preview for the current day.
 - **Settings** — clinic hours, accepted insurance, cancellation policy, and
-  Clara's guardrails.
+  AssistMedica's guardrails.
 
 Voice booking: The dashboard supports a quick voice booking flow on the
 Schedule → Quick Book panel. Click the microphone button, speak your booking
@@ -96,7 +96,7 @@ Speech engine.
 
 ![Clinic dashboard screenshot](docs/dashboard-schedule.png)
 
-This snapshot shows the Schedule page with the Ask Clara console, today's
+This snapshot shows the Schedule page with the Ask AssistMedica console, today's
 appointment timeline, doctor availability chips, and the status summary cards
 (Booked / Pending / Cancelled). The web app also includes Messages, Patients,
 Doctors, and Settings pages for full clinic admin workflows.
@@ -114,10 +114,10 @@ python main.py
 
 ```
 You: What doctors do you have?
-Clara: We have Dr. Emily Grant (Family Medicine), Dr. Michael Hart (Cardiology), Dr. Olivia Chen (Pediatrics).
+AssistMedica: We have Dr. Emily Grant (Family Medicine), Dr. Michael Hart (Cardiology), Dr. Olivia Chen (Pediatrics).
 
 You: Book me with Dr. Emily Grant next Monday at 10am, I'm Jane Doe
-Clara: Confirming: Jane Doe with Dr. Emily Grant on 2026-07-13 at 10:00. Shall I book it?
+AssistMedica: Confirming: Jane Doe with Dr. Emily Grant on 2026-07-13 at 10:00. Shall I book it?
 ```
 
 ## Reset to dummy data
@@ -151,14 +151,14 @@ When the model needs data or needs to perform an action, it emits a
 `tools.py` against the SQLite database in `data/clinic.db`, returns the
 result, and loops until Claude produces a final reply. `ClinicAgent.send()`
 also returns a `tool_calls` trace (name, input, result) so the dashboard can
-render the `→ tool_name(...)` line shown under Clara's chat bubbles.
+render the `→ tool_name(...)` line shown under AssistMedica's chat bubbles.
 
 `web.py` is a thin Flask layer: read-only pages call `tools.py`'s dashboard
 helpers directly; the two chat surfaces go through `ClinicAgent`. The
-front-desk "Ask Clara" console keeps one in-memory conversation for the life
+front-desk "Ask AssistMedica" console keeps one in-memory conversation for the life
 of the server process; patient message threads are stored in SQLite
 (`message_threads` / `thread_messages`) and rehydrated into a fresh
-`ClinicAgent` on each reply so Clara has the thread's context.
+`ClinicAgent` on each reply so AssistMedica has the thread's context.
 
 - `src/healthagent/database.py` manages SQLite persistence and initial seed data.
 - `main.py` starts a terminal chat loop.
@@ -176,7 +176,7 @@ For a production-ready deployment, consider:
 ## Notes
 
 - This project is scoped to clinic administrative workflows only.
-- Clara is not a diagnostic tool and should not provide clinical advice.
+- AssistMedica is not a diagnostic tool and should not provide clinical advice.
 - If you want clinical features (symptom intake, triage), treat that as a
   separate, more carefully reviewed component — do not fold it into this
   admin agent's scope without clinical and compliance review (HIPAA, etc.).
